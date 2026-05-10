@@ -263,7 +263,7 @@ const saveFinancialData = async () => {
 
   console.log("Attempting save for User ID:", user.id)
 
-  // 2. Data Save karein
+  
   const { error } = await supabase
     .from('user_financials')
     .upsert({

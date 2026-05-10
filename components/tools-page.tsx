@@ -238,7 +238,7 @@ const [selectedAddons, setSelectedAddons] = useState<string[]>([]);
 // Static Data for Add-ons
 // --- DYNAMIC EXPERIENCE ENGINE ---
 
-// 1. Helper Function: City ke hisaab se Activities lana
+// 1. Helper Function: City 
 const getAddonsForCity = (city: string) => {
   const c = city.toLowerCase().trim();
   let specific: any[] = [];
@@ -307,7 +307,7 @@ const getAddonsForCity = (city: string) => {
     specific = [
       { id: 'scuba', title: 'Deep Sea Scuba', price: 5500, icon: '🐠', desc: 'Havelock Island Special' },
       { id: 'ferry', title: 'Cruise Ferry', price: 1500, icon: '⛴️', desc: 'Port Blair to Havelock' }
-    ];
+    ];f
   }
 
   // --- INTERNATIONAL ---
@@ -332,7 +332,6 @@ const getAddonsForCity = (city: string) => {
     ];
   }
   
-  // DEFAULT (Agar city match na ho)
   if (specific.length === 0) {
     specific = [
       { id: 'city', title: 'City Sightseeing', price: 2000, icon: '🏙️', desc: 'Full day private cab' },
@@ -340,7 +339,6 @@ const getAddonsForCity = (city: string) => {
     ];
   }
 
-  // Common Add-ons jo har jagah milenge
   const common = [
     { id: 'cab', title: 'Airport Transfers', price: 1500, icon: '🚖', desc: 'Private AC Sedan' },
     { id: 'meal', title: 'All Meals Pass', price: 2000, icon: '🍽️', desc: 'Breakfast + Dinner' }
@@ -355,7 +353,6 @@ const toggleAddon = (id: string) => {
     prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
   );
 };
-// Naya State: Ab hum list store karenge, sirf ek price nahi
 const [flightResults, setFlightResults] = useState<any[]>([])
 const [isLoading, setIsLoading] = useState(false)
 const [selectedFlight, setSelectedFlight] = useState<string | null>(null);
@@ -364,7 +361,6 @@ const [step, setStep] = useState("flights");
 const [hotelResults, setHotelResults] = useState<any[]>([]);
 const [isHotelLoading, setIsHotelLoading] = useState(false);
 
-// 1. Helper: City Name ko Code mein badalne ke liye
 const getCityCode = (name: string) => {
   const n = name.toLowerCase().trim();
   if (n.includes("patna")) return "PAT";
@@ -382,12 +378,12 @@ const getCityCode = (name: string) => {
   return "DEL"; // Default fallback
 };
 
-// 2. Main Function: Hotels Fetch karne ke liye
+// 2. Main Function
 const handleFindHotels = async () => {
   setIsHotelLoading(true);
   setStep("hotels"); // Screen change karo
   
-  // Destination se sahi code nikalo
+  // Destination
   const cityCode = getCityCode(dest); 
 
   try {
@@ -411,10 +407,10 @@ const handleSearch = async () => {
   
   setIsLoading(true);
   
-  // ✅ RESET PREVIOUS STATE (Inhe add karein)
-  setFlightResults([]);       // Purane results clear karo
-  setSelectedFlight(null);    // Purana selection hatao
-  setStep("flights");         // Wapas flight step par le jao agar hotel par ho toh
+  // ✅ RESET PREVIOUS STATE ()
+  setFlightResults([]);       
+  setSelectedFlight(null);    
+  setStep("flights");         
   
   try {
     const res = await fetch(`/api/flight-price?dest=${dest}&from=${origin}&date=${startDate}`);
@@ -449,7 +445,6 @@ const data = await fetchRealStockPrice(searchSymbol)
 
       setStockData({
         ...data,
-        // YAHAN DHAYAN DEIN: 'timeFilter' pass karna zaroori hai
         data: generateProfessionalHistory(data.current, points, symbol, timeFilter),
         symbol,
       })
@@ -466,7 +461,7 @@ const data = await fetchRealStockPrice(searchSymbol)
   return (
     <div className="min-h-screen pt-28 pb-20 px-4 bg-background text-white overflow-hidden relative">
       
-     {/* --- NAVBAR FIXED (Ab Click hoga) --- */}
+     {/* --- NAVBAR FIXED --- */}
      
   
       {/* Background Retained */}
@@ -898,7 +893,7 @@ const data = await fetchRealStockPrice(searchSymbol)
     <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">
       Travellers
     </p>
-    {/* Visual indicator ki ab yeh edit nahi ho sakta */}
+    {/*  */}
     {step === "hotels" && (
       <span className="text-[8px] bg-white/10 text-gray-400 px-2 py-0.5 rounded border border-white/10 uppercase font-black tracking-widest">
         Locked
@@ -921,7 +916,7 @@ const data = await fetchRealStockPrice(searchSymbol)
       {/* Number Display */}
       <span className="font-black text-xl w-8 text-center">{travellers}</span>
       
-      {/* Plus Button - Disabled if step is hotels */}
+      {/* Plus Button - s */}
       <button 
         disabled={step === "hotels"}
         onClick={() => setTravellers(prev => Math.min(9, prev + 1))}
@@ -943,7 +938,7 @@ const data = await fetchRealStockPrice(searchSymbol)
                    <button onClick={handleSearch} disabled={isLoading} className="w-full py-5 rounded-xl bg-gradient-to-r from-blue-600 to-blue-500 hover:scale-[1.02] active:scale-95 transition-all font-black text-lg tracking-widest uppercase shadow-xl flex items-center justify-center gap-3">
                      {isLoading ? <Loader2 className="animate-spin" /> : <Search size={20} />} {isLoading ? "Searching..." : "Search Flights"}
                    </button>
-                   {/* Is code ko Line 663 (</button>) ke theek baad paste karein */}
+                   {/*  */}
 
                    {selectedFlight && step === "flights" && (
   <div className="mt-6 mb-6 p-5 bg-[#10b981]/10 border border-[#10b981]/30 rounded-2xl animate-in slide-in-from-bottom-2">
@@ -972,7 +967,7 @@ const data = await fetchRealStockPrice(searchSymbol)
               
               <div className="lg:col-span-8 space-y-4 h-[600px] overflow-y-auto pr-2 scrollbar-hide">
                 
-                {/* CASE 1: FLIGHTS LIST (Jab tak Hotel select na ho) */}
+                {/* CASE 1: FLIGHTS LIST  */}
                 {step === "flights" && (
                   <>
                     {flightResults.length === 0 && !isLoading ? (
@@ -1047,7 +1042,7 @@ const data = await fetchRealStockPrice(searchSymbol)
                   </>
                 )}
 
-                {/* CASE 2: HOTEL LIST (Yeh tab dikhega jab Flight select karke Next dabayenge) */}
+                {/* CASE 2:  */}
                 {step === "hotels" && (
                   <div className="space-y-6 animate-in fade-in slide-in-from-right-8 duration-500">
                     {/* Header */}
@@ -1462,7 +1457,7 @@ const data = await fetchRealStockPrice(searchSymbol)
                   outerRadius={100}
                   paddingAngle={5}
                   dataKey="amount"
-                  // 👇 YEH LABELS DIKHAYEGA
+                  
                   label={({ cx, cy, midAngle, innerRadius, outerRadius, percent }) => {
                     const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
                     const x = cx + radius * Math.cos(-midAngle * Math.PI / 180);
@@ -1526,109 +1521,83 @@ const data = await fetchRealStockPrice(searchSymbol)
         {/* 4. UPCOMING PAID FEATURE (Locked Report Teaser) */}
         <div className="relative mt-12 rounded-[2.5rem] overflow-hidden border border-white/10 bg-[#0a0a0a]">
            
-           {/* Blurry Content Background */}
-           <div className="p-8 opacity-20 blur-sm pointer-events-none select-none grayscale">
-              <h3 className="text-2xl font-black text-white mb-6">Detailed Investment Strategy & Tax Report</h3>
-              <div className="grid grid-cols-2 gap-8">
-                 <div className="h-40 bg-white/10 rounded-2xl"></div>
-                 <div className="space-y-4">
-                    <div className="h-4 bg-white/10 rounded w-3/4"></div>
-                    <div className="h-4 bg-white/10 rounded w-1/2"></div>
-                    <div className="h-4 bg-white/10 rounded w-full"></div>
-                 </div>
-              </div>
-           </div>
+          {/* Blurry Content Background */}
 
-           {/* Locked Overlay */}
-           <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-gradient-to-t from-black via-black/80 to-transparent">
-              <div className="p-4 bg-white/10 backdrop-blur-md rounded-full mb-4 border border-white/20">
-                 <Lock className="h-8 w-8 text-[#10b981]" />
-              </div>
-              <h3 className="text-2xl font-black text-white mb-2 tracking-tight">Unlock Full Financial Audit</h3>
-              <p className="text-gray-400 text-sm mb-8 text-center max-w-md">
-                Get a deep-dive analysis including Tax Saving opportunities, personalized Investment Plan, and a detailed 10-page PDF report.
-              </p>
-              <Button className="bg-[#10b981] hover:bg-[#0da06f] text-black font-black px-8 py-6 rounded-2xl text-sm tracking-widest uppercase shadow-[0_0_40px_-10px_#10b981]">
-                 Unlock Report (₹99) <span className="ml-2 bg-black/20 px-2 py-0.5 rounded text-[10px]">Coming Soon</span>
-              </Button>
-           </div>
-        </div>
-
-      </div>
-    )}
-
-    {/* Yahan se neeche aapka purana Table code rahega (Line 1361 wala) */}
-              {/* Transaction Table */}
-            {/* 👇 STEP: REPLACE TABLE WITH THIS PRIVACY VERSION (Line 1486) 👇 */}
-    {dashboardData?.recent_transactions?.length > 0 && (
-      <div className="mt-8 w-full animate-in fade-in slide-in-from-bottom-8">
-        <div className="border border-white/10 rounded-3xl overflow-hidden bg-[#0a0a0a] shadow-2xl">
-          <div className="p-4 border-b border-white/5 bg-white/5">
-             <h4 className="text-xs font-bold uppercase tracking-widest text-white">Recent Transactions</h4>
-          </div>
-          <table className="w-full text-left">
-            <thead className="bg-white/5 text-[10px] uppercase font-bold text-gray-400 tracking-widest">
-              <tr>
-                <th className="p-4 pl-6">Date</th>
-                <th className="p-4">Description</th>
-                <th className="p-4">Category</th>
-                <th className="p-4 text-right pr-6">Amount</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-white/5">
-              {dashboardData.recent_transactions.map((t:any, i:number) => {
-                
-                // 🔒 PRIVACY MASKING LOGIC 🔒
-                let cleanDesc = t.desc || t.description || "Unknown";
-                
-                // 1. UPI ID Masking (e.g., UPI-RAHUL -> UPI-R****)
-                if (cleanDesc.toUpperCase().includes("UPI")) {
-                   cleanDesc = cleanDesc.replace(/([A-Z\s]+)$/, (name:string) => {
-                      return name.trim().split(' ').map((n) => n[0] + "****").join(' ');
-                   });
-                } 
-                // 2. Long Name Masking (Privacy for non-UPI)
-                else if (cleanDesc.length > 15) {
-                   cleanDesc = cleanDesc.substring(0, 10) + "****";
-                }
-
-                return (
-                  <tr key={i} className="hover:bg-white/5 transition-colors text-sm font-medium group">
-                    <td className="p-4 pl-6 text-gray-500 tabular-nums">{t.date}</td>
-                    
-                    {/* ✅ Masked Name Display */}
-                    <td className="p-4 text-white group-hover:text-[#10b981] transition-colors uppercase tracking-wider text-[11px] md:text-sm">
-                      {cleanDesc}
-                    </td>
-
-                    <td className="p-4">
-                      <span className="text-[9px] font-black uppercase px-2 py-1 rounded-md bg-gray-800 text-gray-400 border border-gray-700 whitespace-nowrap">
-                        {t.category}
-                      </span>
-                    </td>
-                    <td className={`p-4 pr-6 text-right font-black tabular-nums ${String(t.type).toUpperCase() === 'CREDIT' ? 'text-[#10b981]' : 'text-white'}`}>
-                      {String(t.type).toUpperCase() === 'DEBIT' ? '-' : '+'} ₹{Math.abs(t.amount).toLocaleString()}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      </div>
-    )}
-              {/* AI Analysis Report */}
-              {analysisResult && (
-                <div className="mt-8 w-full bg-black/40 border border-[#10b981]/30 p-8 rounded-[2rem] animate-in fade-in slide-in-from-bottom-4 text-left shadow-2xl">
-                  <h3 className="text-[#10b981] font-black text-2xl mb-6 uppercase tracking-widest flex items-center gap-3">
-                     <Sparkles size={24} /> Monexi Audit Report
-                  </h3>
-                  <div className="prose prose-invert prose-lg max-w-none text-gray-300 whitespace-pre-line leading-relaxed font-medium">
-                     {analysisResult}
-                  </div>
+          {/* Transaction Table */}
+          {dashboardData?.recent_transactions?.length > 0 && (
+            <div className="mt-8 w-full animate-in fade-in slide-in-from-bottom-8">
+              <div className="border border-white/10 rounded-3xl overflow-hidden bg-[#0a0a0a] shadow-2xl">
+                <div className="p-4 border-b border-white/5 bg-white/5">
+                   <h4 className="text-xs font-bold uppercase tracking-widest text-white">Recent Transactions</h4>
                 </div>
-              )}
+                <table className="w-full text-left">
+                  <thead className="bg-white/5 text-[10px] uppercase font-bold text-gray-400 tracking-widest">
+                    <tr>
+                      <th className="p-4 pl-6">Date</th>
+                      <th className="p-4">Description</th>
+                      <th className="p-4">Category</th>
+                      <th className="p-4 text-right pr-6">Amount</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-white/5">
+                    {dashboardData.recent_transactions.map((t:any, i:number) => {
+                      
+                      // 🔒 PRIVACY MASKING LOGIC 🔒
+                      let cleanDesc = t.desc || t.description || "Unknown";
+                      
+                      // 1. UPI ID Masking (e.g., UPI-RAHUL -> UPI-R****)
+                      if (cleanDesc.toUpperCase().includes("UPI")) {
+                         cleanDesc = cleanDesc.replace(/([A-Z\s]+)$/, (name:string) => {
+                            return name.trim().split(' ').map((n) => n[0] + "****").join(' ');
+                         });
+                      } 
+                      // 2. Long Name Masking (Privacy for non-UPI)
+                      else if (cleanDesc.length > 15) {
+                         cleanDesc = cleanDesc.substring(0, 10) + "****";
+                      }
 
+                      return (
+                        <tr key={i} className="hover:bg-white/5 transition-colors text-sm font-medium group">
+                          <td className="p-4 pl-6 text-gray-500 tabular-nums">{t.date}</td>
+                          
+                          {/* ✅ Masked Name Display */}
+                          <td className="p-4 text-white group-hover:text-[#10b981] transition-colors uppercase tracking-wider text-[11px] md:text-sm">
+                            {cleanDesc}
+                          </td>
+
+                          <td className="p-4">
+                            <span className="text-[9px] font-black uppercase px-2 py-1 rounded-md bg-gray-800 text-gray-400 border border-gray-700 whitespace-nowrap">
+                              {t.category}
+                            </span>
+                          </td>
+                          <td className={`p-4 pr-6 text-right font-black tabular-nums ${String(t.type).toUpperCase() === 'CREDIT' ? 'text-[#10b981]' : 'text-white'}`}>
+                            {String(t.type).toUpperCase() === 'DEBIT' ? '-' : '+'} ₹{Math.abs(t.amount).toLocaleString()}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+          
+          {/* AI Analysis Report */}
+          {analysisResult && (
+            <div className="mt-8 w-full bg-black/40 border border-[#10b981]/30 p-8 rounded-[2rem] animate-in fade-in slide-in-from-bottom-4 text-left shadow-2xl">
+              <h3 className="text-[#10b981] font-black text-2xl mb-6 uppercase tracking-widest flex items-center gap-3">
+                 <Sparkles size={24} /> Monexi Audit Report
+              </h3>
+              <div className="prose prose-invert prose-lg max-w-none text-gray-300 whitespace-pre-line leading-relaxed font-medium">
+                 {analysisResult}
+              </div>
+            </div>
+          )}
+
+        </div> {/* <-- ADDED: Correctly closing the UPCOMING PAID FEATURE div */}
+
+      </div>
+    )}
             </div>
           </TabsContent>
         </Tabs>
@@ -1636,7 +1605,7 @@ const data = await fetchRealStockPrice(searchSymbol)
     </div>
   )
 }
-// "default" hata diya gaya hai 👇
+
 export function ToolsPage() {
   return (
     <Suspense fallback={<div className="flex h-screen items-center justify-center text-[#10b981]">Loading...</div>}>

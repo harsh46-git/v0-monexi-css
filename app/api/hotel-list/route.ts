@@ -3,8 +3,8 @@ import { NextResponse } from "next/server";
 const AMADEUS_CLIENT_ID = process.env.AMADEUS_CLIENT_ID || "GhXW2e1SI7sALsAkyII5jE0ZpOGIaKin";
 const AMADEUS_CLIENT_SECRET = process.env.AMADEUS_CLIENT_SECRET || "rSfpk3GhU0xlzzcI";
 
-// 📸 UPDATED: ONLINE IMAGE POOL (No Download Required)
-// Yeh URLs direct internet se load honge.
+
+
 const HOTEL_IMAGES = [
   "https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=800&q=80", // Luxury Pool
   "https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?auto=format&fit=crop&w=800&q=80", // Modern Exterior
