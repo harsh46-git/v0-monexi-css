@@ -42,7 +42,7 @@ const ThreeDBackground = () => {
     <div className="absolute inset-0 w-full h-full z-0 pointer-events-none">
       <Canvas camera={{ position: [0, 0, 1], fov: 50 }}>
         {/* Adds subtle reflections to make it look more 3D */}
-        <Environment preset="city" />
+        {/* <Environment preset="city" /> */}
         <Suspense fallback={null}>
           <NetworkMesh />
         </Suspense>
