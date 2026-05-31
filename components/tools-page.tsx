@@ -155,6 +155,184 @@ const DEMO_DATA = {
     { date: "15/12", desc: "Netflix Subscription", amount: 649, type: "DEBIT", category: "Bills" }
   ]
 };
+// ============================================================
+//  PASTE THIS at module level in tools-page.tsx
+//  (after the DEMO_DATA object, BEFORE `function ToolsContent()`)
+// ============================================================
+function TxnSearchTable({ txns, payees }: { txns: any[]; payees?: any[] }) {
+  const [query, setQuery] = useState("")
+  const [expanded, setExpanded] = useState(false)
+
+  const inr = (n: number) => "₹" + Math.round(Math.abs(n)).toLocaleString("en-IN")
+  const list = Array.isArray(txns) ? txns : []
+
+  // build payee summary client-side if backend didn't send it (works on demo too)
+  const allPayees = useMemo(() => {
+    if (payees && payees.length) return payees
+    const m: Record<string, any> = {}
+    for (const t of list) {
+      const name = t.desc || t.description || "Unknown"
+      const key = name.toLowerCase()
+      if (!m[key]) m[key] = { name, count: 0, total: 0 }
+      m[key].count += 1
+      m[key].total += Math.abs(t.amount)
+    }
+    return Object.values(m).sort((a: any, b: any) => b.total - a.total)
+  }, [list, payees])
+
+  const q = query.trim().toLowerCase()
+
+  const matchedPayees = useMemo(
+    () => (q ? allPayees.filter((p: any) => p.name.toLowerCase().includes(q)) : []),
+    [q, allPayees]
+  )
+  const matchedTxns = useMemo(
+    () =>
+      q
+        ? list.filter(
+            (t) =>
+              (t.desc || t.description || "").toLowerCase().includes(q) ||
+              (t.category || "").toLowerCase().includes(q)
+          )
+        : [],
+    [q, list]
+  )
+  const searchTotal = useMemo(
+    () =>
+      matchedTxns.reduce(
+        (s, t) => s + (String(t.type).toUpperCase() === "DEBIT" ? Math.abs(t.amount) : 0),
+        0
+      ),
+    [matchedTxns]
+  )
+
+  const shown = q ? matchedTxns : expanded ? list : list.slice(0, 8)
+
+  return (
+    <div className="mt-8 w-full animate-in fade-in slide-in-from-bottom-8">
+      <div className="border border-white/10 rounded-3xl overflow-hidden bg-[#0a0a0a] shadow-2xl">
+        <div className="p-4 border-b border-white/5 bg-white/5">
+          <h4 className="text-xs font-bold uppercase tracking-widest text-white mb-3">
+            Recent Transactions
+          </h4>
+          {/* SEARCH BOX */}
+          <div className="relative">
+            <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-gray-500">
+              🔍
+            </span>
+            <input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search by name or merchant (e.g. Zomato, Amazon, Rent)…"
+              className="w-full rounded-xl border border-white/10 bg-black/40 py-3 pl-11 pr-10 text-sm text-white placeholder-gray-600 outline-none transition focus:border-[#10b981]/60"
+            />
+            {query && (
+              <button
+                onClick={() => setQuery("")}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white"
+              >
+                ✕
+              </button>
+            )}
+          </div>
+
+          {/* PAYEE SUMMARY when searching */}
+          {q && matchedPayees.length > 0 && (
+            <div className="mt-3 space-y-2">
+              {matchedPayees.slice(0, 5).map((p: any) => (
+                <div
+                  key={p.name}
+                  className="flex items-center justify-between rounded-xl border border-[#10b981]/20 bg-[#10b981]/[0.06] px-4 py-3"
+                >
+                  <div>
+                    <p className="font-bold text-white">{p.name}</p>
+                    <p className="text-[10px] text-gray-500 uppercase tracking-widest">
+                      {p.count} {p.count === 1 ? "transaction" : "transactions"}
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-lg font-black text-[#10b981]">{inr(p.total)}</p>
+                    <p className="text-[10px] text-gray-500 uppercase">total</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {q && (
+            <p className="mt-3 text-xs text-gray-400 font-medium">
+              Found <span className="font-black text-white">{matchedTxns.length}</span> transactions
+              {searchTotal > 0 && (
+                <>
+                  {" "}· total paid out{" "}
+                  <span className="font-black text-[#10b981]">{inr(searchTotal)}</span>
+                </>
+              )}
+            </p>
+          )}
+        </div>
+
+        {/* TABLE */}
+        <table className="w-full text-left">
+          <thead className="bg-white/5 text-[10px] uppercase font-bold text-gray-400 tracking-widest">
+            <tr>
+              <th className="p-4 pl-6">Date</th>
+              <th className="p-4">Description</th>
+              <th className="p-4">Category</th>
+              <th className="p-4 text-right pr-6">Amount</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-white/5">
+            {shown.length === 0 ? (
+              <tr>
+                <td colSpan={4} className="p-8 text-center text-sm text-gray-500">
+                  No transactions found for “{query}”.
+                </td>
+              </tr>
+            ) : (
+              shown.map((t: any, i: number) => {
+                const isDebit = String(t.type).toUpperCase() === "DEBIT"
+                return (
+                  <tr
+                    key={i}
+                    className="hover:bg-white/5 transition-colors text-sm font-medium group"
+                  >
+                    <td className="p-4 pl-6 text-gray-500 tabular-nums">{t.date}</td>
+                    <td className="p-4 text-white group-hover:text-[#10b981] transition-colors uppercase tracking-wider text-[11px] md:text-sm">
+                      {t.desc || t.description || "Unknown"}
+                    </td>
+                    <td className="p-4">
+                      <span className="text-[9px] font-black uppercase px-2 py-1 rounded-md bg-gray-800 text-gray-400 border border-gray-700 whitespace-nowrap">
+                        {t.category}
+                      </span>
+                    </td>
+                    <td
+                      className={`p-4 pr-6 text-right font-black tabular-nums ${
+                        isDebit ? "text-white" : "text-[#10b981]"
+                      }`}
+                    >
+                      {isDebit ? "-" : "+"} {inr(t.amount)}
+                    </td>
+                  </tr>
+                )
+              })
+            )}
+          </tbody>
+        </table>
+
+        {/* VIEW ALL / LESS */}
+        {!q && list.length > 8 && (
+          <button
+            onClick={() => setExpanded((e) => !e)}
+            className="w-full py-4 text-xs font-black uppercase tracking-widest text-[#10b981] border-t border-white/5 hover:bg-white/5 transition-all"
+          >
+            {expanded ? "Show less" : `View all ${list.length} transactions`}
+          </button>
+        )}
+      </div>
+    </div>
+  )
+}
 // FIX: Exported as a NAMED export to match your page.tsx import
 function ToolsContent() {
   const searchParams = useSearchParams()
@@ -1524,63 +1702,12 @@ const data = await fetchRealStockPrice(searchSymbol)
           {/* Blurry Content Background */}
 
           {/* Transaction Table */}
-          {dashboardData?.recent_transactions?.length > 0 && (
-            <div className="mt-8 w-full animate-in fade-in slide-in-from-bottom-8">
-              <div className="border border-white/10 rounded-3xl overflow-hidden bg-[#0a0a0a] shadow-2xl">
-                <div className="p-4 border-b border-white/5 bg-white/5">
-                   <h4 className="text-xs font-bold uppercase tracking-widest text-white">Recent Transactions</h4>
-                </div>
-                <table className="w-full text-left">
-                  <thead className="bg-white/5 text-[10px] uppercase font-bold text-gray-400 tracking-widest">
-                    <tr>
-                      <th className="p-4 pl-6">Date</th>
-                      <th className="p-4">Description</th>
-                      <th className="p-4">Category</th>
-                      <th className="p-4 text-right pr-6">Amount</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-white/5">
-                    {dashboardData.recent_transactions.map((t:any, i:number) => {
-                      
-                      // 🔒 PRIVACY MASKING LOGIC 🔒
-                      let cleanDesc = t.desc || t.description || "Unknown";
-                      
-                      // 1. UPI ID Masking (e.g., UPI-RAHUL -> UPI-R****)
-                      if (cleanDesc.toUpperCase().includes("UPI")) {
-                         cleanDesc = cleanDesc.replace(/([A-Z\s]+)$/, (name:string) => {
-                            return name.trim().split(' ').map((n) => n[0] + "****").join(' ');
-                         });
-                      } 
-                      // 2. Long Name Masking (Privacy for non-UPI)
-                      else if (cleanDesc.length > 15) {
-                         cleanDesc = cleanDesc.substring(0, 10) + "****";
-                      }
-
-                      return (
-                        <tr key={i} className="hover:bg-white/5 transition-colors text-sm font-medium group">
-                          <td className="p-4 pl-6 text-gray-500 tabular-nums">{t.date}</td>
-                          
-                          {/* ✅ Masked Name Display */}
-                          <td className="p-4 text-white group-hover:text-[#10b981] transition-colors uppercase tracking-wider text-[11px] md:text-sm">
-                            {cleanDesc}
-                          </td>
-
-                          <td className="p-4">
-                            <span className="text-[9px] font-black uppercase px-2 py-1 rounded-md bg-gray-800 text-gray-400 border border-gray-700 whitespace-nowrap">
-                              {t.category}
-                            </span>
-                          </td>
-                          <td className={`p-4 pr-6 text-right font-black tabular-nums ${String(t.type).toUpperCase() === 'CREDIT' ? 'text-[#10b981]' : 'text-white'}`}>
-                            {String(t.type).toUpperCase() === 'DEBIT' ? '-' : '+'} ₹{Math.abs(t.amount).toLocaleString()}
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
+{dashboardData?.recent_transactions?.length > 0 && (
+  <TxnSearchTable
+    txns={dashboardData.all_transactions || dashboardData.recent_transactions}
+    payees={dashboardData.payees}
+  />
+)}
           
           {/* AI Analysis Report */}
           {analysisResult && (
