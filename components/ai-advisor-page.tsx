@@ -66,20 +66,30 @@ export function AiAdvisorPage() {
       const reader = response.body.getReader()
       const decoder = new TextDecoder()
 
-      while (true) {
-        const { done, value } = await reader.read()
-        if (done) break
+     // Smooth typewriter: collect tokens, render char-by-char
+     let fullText = ""
+     let rendered = ""
 
-        const chunk = decoder.decode(value, { stream: true })
+     const typeOut = async () => {
+       while (rendered.length < fullText.length) {
+         // 2 chars per tick = smooth but not too slow
+         rendered = fullText.slice(0, rendered.length + 2)
+         setMessages((prev) => {
+           const last = prev[prev.length - 1]
+           return [...prev.slice(0, -1), { role: "assistant", content: rendered }]
+         })
+         await new Promise((r) => setTimeout(r, 12)) // 12ms per tick
+       }
+     }
 
-        setMessages((prev) => {
-          const last = prev[prev.length - 1]
-          return [
-            ...prev.slice(0, -1),
-            { role: "assistant", content: last.content + chunk },
-          ]
-        })
-      }
+     while (true) {
+       const { done, value } = await reader.read()
+       if (done) break
+       fullText += decoder.decode(value, { stream: true })
+     }
+
+     // stream poora aa gaya — ab smoothly type out karo
+     await typeOut()
     } catch (error: any) {
       if (error?.name === "AbortError") {
         // user ne stop kiya — jo aaya wahi rakho, agar khaali to bubble hatao
