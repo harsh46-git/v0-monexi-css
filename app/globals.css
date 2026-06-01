@@ -86,8 +86,18 @@
   * {
     @apply border-border outline-ring/50;
   }
+  /* Prevent any element from pushing the page wider than the viewport.
+     This kills the mobile horizontal-overflow that was clipping cards/table. */
+  html,
   body {
     @apply bg-background text-foreground;
+    overflow-x: hidden;
+    max-width: 100%;
+  }
+  /* Numbers align like a ledger (tabular figures) */
+  body {
+    font-feature-settings: "tnum" 1;
+    -webkit-tap-highlight-color: transparent;
   }
 }
 

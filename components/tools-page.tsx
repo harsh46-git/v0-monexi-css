@@ -1,6 +1,5 @@
 
 "use client"
-// Line 3 se 8 replace karein:
 import { 
   Calendar, Users, MapPin, Plane, ArrowRight, Wallet, Loader2, Search,
   Hotel, Star, Check, Landmark, Rocket, ShieldCheck, BarChart4, 
@@ -272,8 +271,9 @@ function TxnSearchTable({ txns, payees }: { txns: any[]; payees?: any[] }) {
           )}
         </div>
 
-        {/* TABLE */}
-        <table className="w-full text-left">
+       {/* TABLE */}
+       <div className="overflow-x-auto">
+        <table className="w-full min-w-[560px] text-left">
           <thead className="bg-white/5 text-[10px] uppercase font-bold text-gray-400 tracking-widest">
             <tr>
               <th className="p-4 pl-6">Date</th>
@@ -297,7 +297,7 @@ function TxnSearchTable({ txns, payees }: { txns: any[]; payees?: any[] }) {
                     key={i}
                     className="hover:bg-white/5 transition-colors text-sm font-medium group"
                   >
-                    <td className="p-4 pl-6 text-gray-500 tabular-nums">{t.date}</td>
+                   <td className="p-4 pl-6 text-gray-500 tabular-nums whitespace-nowrap">{t.date}</td>
                     <td className="p-4 text-white group-hover:text-[#10b981] transition-colors uppercase tracking-wider text-[11px] md:text-sm">
                       {t.desc || t.description || "Unknown"}
                     </td>
@@ -317,8 +317,9 @@ function TxnSearchTable({ txns, payees }: { txns: any[]; payees?: any[] }) {
                 )
               })
             )}
-          </tbody>
+         </tbody>
         </table>
+        </div>
 
         {/* VIEW ALL / LESS */}
         {!q && list.length > 8 && (
@@ -346,6 +347,9 @@ function ToolsContent() {
   const [activeTab, setActiveTab] = useState(defaultTab)
   const [symbol, setSymbol] = useState("RELIANCE")
   const [stockData, setStockData] = useState<any>(null)
+  const [stockError, setStockError] = useState<string | null>(null)
+  const [suggestions, setSuggestions] = useState<any[]>([])
+  const [showSug, setShowSug] = useState(false)
   const [lastUpdated, setLastUpdated] = useState("")
   const [timeFilter, setTimeFilter] = useState("1D");
   const [watchlist, setWatchlist] = useState<any[]>([
@@ -634,8 +638,20 @@ const data = await fetchRealStockPrice(searchSymbol)
     updatePrice()
     const interval = setInterval(updatePrice, 15000)
     return () => clearInterval(interval)
-  }, [updatePrice])
+  }, [symbol, timeFilter])
 
+  // 👇 YAHAN PASTE — Stock search suggestions (Groww-style)
+  useEffect(() => {
+    if (symbol.length < 2 || symbol.includes('.')) { setSuggestions([]); return }
+    const timer = setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/search-stock?q=${encodeURIComponent(symbol)}`)
+        const data = await res.json()
+        setSuggestions(data.results || [])
+      } catch { setSuggestions([]) }
+    }, 300)
+    return () => clearTimeout(timer)
+  }, [symbol])
   return (
     <div className="min-h-screen pt-28 pb-20 px-4 bg-background text-white overflow-hidden relative">
       
@@ -713,10 +729,27 @@ const data = await fetchRealStockPrice(searchSymbol)
                     <Input
                       value={symbol}
                       onChange={(e) => setSymbol(e.target.value.toUpperCase())}
+                      onFocus={() => setShowSug(true)}
+                      onBlur={() => setTimeout(() => setShowSug(false), 200)}
                       className="bg-black/50 border-white/10 h-14 rounded-xl font-black pl-10 text-emerald-500 tracking-widest placeholder:text-gray-800"
-                      placeholder="e.g. RELIANCE.NS"
+                      placeholder="Type a stock… Tata, Infosys"
                     />
                     <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-600 font-black">$</div>
+
+                    {showSug && suggestions.length > 0 && (
+                      <div className="absolute z-50 left-0 right-0 mt-2 rounded-xl border border-white/10 bg-[#0a0a0a] shadow-2xl overflow-hidden max-h-64 overflow-y-auto">
+                        {suggestions.map((s: any) => (
+                          <button
+                            key={s.symbol}
+                            onClick={() => { setSymbol(s.symbol); setShowSug(false); setSuggestions([]) }}
+                            className="w-full text-left px-4 py-3 hover:bg-[#10b981]/10 transition border-b border-white/5 last:border-0"
+                          >
+                            <p className="font-black text-white text-sm">{s.symbol.replace('.NS','').replace('.BO','')}</p>
+                            <p className="text-[10px] text-gray-500 truncate">{s.name}</p>
+                          </button>
+                        ))}
+                      </div>
+                    )}
                   </div>
                   <Button
                     onClick={updatePrice}
@@ -1533,7 +1566,7 @@ const data = await fetchRealStockPrice(searchSymbol)
             />
 
             {/* Main UI Container */}
-            <div className="flex flex-col items-center justify-center border-2 border-dashed border-white/10 rounded-[2.5rem] p-16 bg-white/5 backdrop-blur-md relative overflow-hidden group">
+            <div className="flex flex-col items-center justify-center border-2 border-dashed border-white/10 rounded-[1.5rem] sm:rounded-[2.5rem] p-4 sm:p-8 md:p-16 bg-white/5 backdrop-blur-md relative overflow-hidden group w-full max-w-full">
               
               <div className="p-6 bg-[#10b981]/10 rounded-3xl mb-8 border border-[#10b981]/20">
                 <BarChart4 className="h-12 w-12 text-[#10b981]" />
@@ -1575,7 +1608,7 @@ const data = await fetchRealStockPrice(searchSymbol)
     
     {/* --- 📊 MAIN DASHBOARD START --- */}
     {dashboardData && (
-      <div className="mt-8 space-y-8 animate-in fade-in slide-in-from-bottom-8">
+      <div className="mt-8 space-y-8 w-full max-w-full animate-in fade-in slide-in-from-bottom-8">
         
         {/* 1. PRIVACY BANNER (Compliance) */}
         <div className="bg-yellow-500/5 border border-yellow-500/20 p-4 rounded-2xl flex items-start sm:items-center gap-4">
@@ -1591,67 +1624,56 @@ const data = await fetchRealStockPrice(searchSymbol)
         </div>
 
         {/* 2. SUMMARY CARDS (With Negative Savings Logic) */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div className="bg-[#0a0a0a] p-6 rounded-3xl border border-white/10">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
+          <div className="min-w-0 bg-[#0a0a0a] p-4 sm:p-6 rounded-2xl sm:rounded-3xl border border-white/10">
             <p className="text-gray-500 text-[10px] font-bold uppercase tracking-widest mb-2">Total Spent</p>
-            <h3 className="text-2xl md:text-3xl font-black text-white">₹{dashboardData.summary?.total_spent?.toLocaleString()}</h3>
+            <h3 className="text-lg sm:text-2xl md:text-3xl font-black text-white tabular-nums break-words">₹{dashboardData.summary?.total_spent?.toLocaleString()}</h3>
           </div>
-          <div className="bg-[#0a0a0a] p-6 rounded-3xl border border-white/10">
+          <div className="min-w-0 bg-[#0a0a0a] p-4 sm:p-6 rounded-2xl sm:rounded-3xl border border-white/10">
             <p className="text-gray-500 text-[10px] font-bold uppercase tracking-widest mb-2">Total Income</p>
-            <h3 className="text-2xl md:text-3xl font-black text-[#10b981]">₹{dashboardData.summary?.total_income?.toLocaleString()}</h3>
+            <h3 className="text-lg sm:text-2xl md:text-3xl font-black text-[#10b981] tabular-nums break-words">₹{dashboardData.summary?.total_income?.toLocaleString()}</h3>
           </div>
-          <div className="bg-[#0a0a0a] p-6 rounded-3xl border border-white/10">
+          <div className="min-w-0 bg-[#0a0a0a] p-4 sm:p-6 rounded-2xl sm:rounded-3xl border border-white/10">
             <p className="text-gray-500 text-[10px] font-bold uppercase tracking-widest mb-2">Savings Rate</p>
-            <h3 className={`text-2xl md:text-3xl font-black ${(dashboardData.summary?.savings_rate || 0) < 0 ? 'text-red-500' : 'text-blue-500'}`}>
+            <h3 className={`text-lg sm:text-2xl md:text-3xl font-black tabular-nums ${(dashboardData.summary?.savings_rate || 0) < 0 ? 'text-red-500' : 'text-blue-500'}`}>
               {(dashboardData.summary?.savings_rate || 0).toFixed(1)}%
             </h3>
           </div>
-          <div className="bg-[#0a0a0a] p-6 rounded-3xl border border-white/10">
+          <div className="min-w-0 bg-[#0a0a0a] p-4 sm:p-6 rounded-2xl sm:rounded-3xl border border-white/10 flex flex-col">
             <p className="text-gray-500 text-[10px] font-bold uppercase tracking-widest mb-2">Risk Score</p>
-            <span className={`px-3 py-1 rounded-full text-xs font-black uppercase ${
-              dashboardData.summary?.risk_score === 'High' ? 'bg-red-500/20 text-red-500' : 
-              dashboardData.summary?.risk_score === 'Medium' ? 'bg-yellow-500/20 text-yellow-500' : 
+            <span className={`self-start px-3 py-1 rounded-full text-xs font-black uppercase ${
+              dashboardData.summary?.risk_score === 'High' ? 'bg-red-500/20 text-red-500' :
+              dashboardData.summary?.risk_score === 'Medium' ? 'bg-yellow-500/20 text-yellow-500' :
               'bg-[#10b981]/20 text-[#10b981]'
             }`}>
               {dashboardData.summary?.risk_score || "N/A"}
             </span>
           </div>
         </div>
-
         {/* 3. CHARTS & INSIGHTS */}
-        <div className="grid lg:grid-cols-3 gap-6">
+        <div className="grid lg:grid-cols-3 gap-4 sm:gap-6">
           {/* Pie Chart */}
           {/* 👇 UPDATED PIE CHART SECTION (Paste Here) 👇 */}
-          <div className="lg:col-span-1 bg-[#0a0a0a] border border-white/10 rounded-[2.5rem] p-6 flex flex-col items-center justify-center h-[420px] relative">
-            <h4 className="text-gray-400 text-xs font-bold uppercase tracking-widest absolute top-6 left-6">Spending Mix</h4>
-            
+         {/* 👇 UPDATED PIE CHART SECTION (Paste Here) 👇 */}
+         <div className="lg:col-span-1 bg-[#0a0a0a] border border-white/10 rounded-[1.5rem] sm:rounded-[2.5rem] p-5 sm:p-6 flex flex-col items-center justify-center h-[360px] sm:h-[420px] relative">
+         <h4 className="text-gray-400 text-xs font-bold uppercase tracking-widest mb-2">Spending Mix</h4>
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
                   data={dashboardData.categories}
                   cx="50%"
                   cy="50%"
-                  innerRadius={80} 
-                  outerRadius={100}
-                  paddingAngle={5}
+                  innerRadius={70}
+                  outerRadius={95}
+                  paddingAngle={2}
                   dataKey="amount"
-                  
-                  label={({ cx, cy, midAngle, innerRadius, outerRadius, percent }) => {
-                    const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
-                    const x = cx + radius * Math.cos(-midAngle * Math.PI / 180);
-                    const y = cy + radius * Math.sin(-midAngle * Math.PI / 180);
-                    return percent > 0.05 ? (
-                      <text x={x} y={y} fill="white" textAnchor="middle" dominantBaseline="central" fontSize="10" fontWeight="bold">
-                        {`${(percent * 100).toFixed(0)}%`}
-                      </text>
-                    ) : null;
-                  }}
+                  stroke="none"
                 >
                   {dashboardData.categories?.map((entry:any, index:number) => (
                     <Cell key={`cell-${index}`} fill={entry.color} stroke="none" />
                   ))}
                 </Pie>
-                <Tooltip 
+                <Tooltip
                   formatter={(value: number) => `₹${value.toLocaleString()}`}
                   contentStyle={{ backgroundColor: '#000', borderRadius: '12px', border: '1px solid #333' }}
                   itemStyle={{ color: '#fff', fontSize: '12px', fontWeight: 'bold' }}
@@ -1679,7 +1701,7 @@ const data = await fetchRealStockPrice(searchSymbol)
           </div>
 
           {/* AI Insights */}
-          <div className="lg:col-span-2 bg-[#10b981]/5 border border-[#10b981]/20 rounded-[2.5rem] p-8">
+          <div className="lg:col-span-2 bg-[#10b981]/5 border border-[#10b981]/20 rounded-[1.5rem] sm:rounded-[2.5rem] p-5 sm:p-8">
             <h3 className="flex items-center gap-3 text-xl font-black italic text-[#10b981] mb-8 uppercase tracking-tighter">
               <Sparkles size={20} /> Monexi AI Insights
             </h3>
@@ -1697,8 +1719,7 @@ const data = await fetchRealStockPrice(searchSymbol)
         </div>
 
         {/* 4. UPCOMING PAID FEATURE (Locked Report Teaser) */}
-        <div className="relative mt-12 rounded-[2.5rem] overflow-hidden border border-white/10 bg-[#0a0a0a]">
-           
+        <div className="relative mt-8">
           {/* Blurry Content Background */}
 
           {/* Transaction Table */}

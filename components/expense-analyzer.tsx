@@ -56,9 +56,12 @@ function TransactionSearch({ all, payees }: { all: Txn[]; payees: Payee[] }) {
 
   const listTxns = query.trim() ? matchedTxns : expanded ? all : all.slice(0, 8)
 
+  const gridCols =
+    "grid-cols-[minmax(0,0.9fr)_minmax(0,2fr)_minmax(0,1.1fr)_minmax(0,1fr)]"
+
   return (
-    <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-5 backdrop-blur-xl">
-      <div className="mb-4 relative">
+    <div className="rounded-2xl border border-white/[0.08] bg-white/[0.02] p-4 backdrop-blur-xl sm:p-5">
+      <div className="relative mb-4">
         <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-white/40">🔍</span>
         <input
           value={query}
@@ -69,7 +72,7 @@ function TransactionSearch({ all, payees }: { all: Txn[]; payees: Payee[] }) {
         {query && (
           <button
             onClick={() => setQuery("")}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-white/40 hover:text-white"
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-white/40 transition hover:text-white"
           >✕</button>
         )}
       </div>
@@ -78,13 +81,13 @@ function TransactionSearch({ all, payees }: { all: Txn[]; payees: Payee[] }) {
       {query.trim() && matchedPayees.length > 0 && (
         <div className="mb-4 space-y-2">
           {matchedPayees.slice(0, 5).map((p) => (
-            <div key={p.name} className="flex items-center justify-between rounded-xl border border-emerald-500/20 bg-emerald-500/[0.06] px-4 py-3">
-              <div>
-                <p className="font-semibold text-white">{p.name}</p>
+            <div key={p.name} className="flex items-center justify-between gap-3 rounded-xl border border-emerald-500/20 bg-emerald-500/[0.06] px-4 py-3">
+              <div className="min-w-0">
+                <p className="truncate font-semibold text-white">{p.name}</p>
                 <p className="text-xs text-white/50">{p.count} {p.count === 1 ? "transaction" : "transactions"}</p>
               </div>
-              <div className="text-right">
-                <p className="text-lg font-bold text-emerald-400">{inr(p.total)}</p>
+              <div className="shrink-0 text-right">
+                <p className="text-lg font-bold tabular-nums text-emerald-400">{inr(p.total)}</p>
                 <p className="text-xs text-white/40">total</p>
               </div>
             </div>
@@ -101,26 +104,32 @@ function TransactionSearch({ all, payees }: { all: Txn[]; payees: Payee[] }) {
         </p>
       )}
 
-      {/* Table */}
+      {/* Table — horizontal scroll on mobile, shrinkable tracks, truncation works */}
       <div className="overflow-hidden rounded-xl border border-white/5">
-        <div className="grid grid-cols-[1fr_2fr_1.2fr_1fr] gap-2 border-b border-white/10 bg-white/[0.03] px-4 py-3 text-xs font-semibold uppercase tracking-wide text-white/40">
-          <span>Date</span><span>Description</span><span>Category</span><span className="text-right">Amount</span>
-        </div>
-        <div className="max-h-[420px] overflow-y-auto">
-          {listTxns.length === 0 ? (
-            <p className="px-4 py-8 text-center text-sm text-white/40">No transactions found for “{query}”.</p>
-          ) : (
-            listTxns.map((t, i) => (
-              <div key={i} className="grid grid-cols-[1fr_2fr_1.2fr_1fr] items-center gap-2 border-b border-white/5 px-4 py-3 text-sm transition hover:bg-white/[0.03]">
-                <span className="text-white/50">{t.date}</span>
-                <span className="truncate font-medium text-white" title={t.desc}>{t.desc}</span>
-                <span><span className="rounded-md bg-white/5 px-2 py-1 text-xs text-white/60">{t.category}</span></span>
-                <span className={`text-right font-semibold ${t.type === "DEBIT" ? "text-rose-400" : "text-emerald-400"}`}>
-                  {t.type === "DEBIT" ? "- " : "+ "}{inr(t.amount)}
-                </span>
-              </div>
-            ))
-          )}
+        <div className="overflow-x-auto">
+          <div className="min-w-[520px]">
+            <div className={`grid ${gridCols} gap-2 border-b border-white/10 bg-white/[0.03] px-4 py-3 text-xs font-semibold uppercase tracking-wide text-white/40`}>
+              <span>Date</span><span>Description</span><span>Category</span><span className="text-right">Amount</span>
+            </div>
+            <div className="max-h-[420px] overflow-y-auto">
+              {listTxns.length === 0 ? (
+                <p className="px-4 py-8 text-center text-sm text-white/40">No transactions found for “{query}”.</p>
+              ) : (
+                listTxns.map((t, i) => (
+                  <div key={i} className={`grid ${gridCols} items-center gap-2 border-b border-white/5 px-4 py-3 text-sm transition hover:bg-white/[0.03]`}>
+                    <span className="whitespace-nowrap text-white/50">{t.date}</span>
+                    <span className="min-w-0 truncate font-medium text-white" title={t.desc}>{t.desc}</span>
+                    <span className="min-w-0">
+                      <span className="inline-block max-w-full truncate rounded-md bg-white/5 px-2 py-1 text-xs text-white/60">{t.category}</span>
+                    </span>
+                    <span className={`whitespace-nowrap text-right font-semibold tabular-nums ${t.type === "DEBIT" ? "text-rose-400" : "text-emerald-400"}`}>
+                      {t.type === "DEBIT" ? "- " : "+ "}{inr(t.amount)}
+                    </span>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
         </div>
       </div>
 
@@ -132,6 +141,40 @@ function TransactionSearch({ all, payees }: { all: Txn[]; payees: Payee[] }) {
           {expanded ? "Show less" : `View all ${all.length} transactions`}
         </button>
       )}
+    </div>
+  )
+}
+
+// ============================================================
+//  Premium stat card
+// ============================================================
+function StatCard({
+  label, value, tone,
+}: {
+  label: string
+  value: string
+  tone: "rose" | "emerald" | "blue" | "amber" | "white"
+}) {
+  const valueColor = {
+    rose: "text-rose-400",
+    emerald: "text-emerald-400",
+    blue: "text-sky-400",
+    amber: "text-amber-400",
+    white: "text-white",
+  }[tone]
+  const glow = {
+    rose: "bg-rose-500/10",
+    emerald: "bg-emerald-500/10",
+    blue: "bg-sky-500/10",
+    amber: "bg-amber-500/10",
+    white: "bg-white/10",
+  }[tone]
+
+  return (
+    <div className="relative overflow-hidden rounded-2xl border border-white/[0.08] bg-gradient-to-b from-white/[0.05] to-white/[0.01] p-4 sm:p-5">
+      <div className={`pointer-events-none absolute -right-6 -top-6 h-20 w-20 rounded-full blur-2xl ${glow}`} />
+      <p className="text-[11px] font-medium uppercase tracking-wider text-white/40">{label}</p>
+      <p className={`mt-1.5 text-xl font-bold tabular-nums sm:text-2xl ${valueColor}`}>{value}</p>
     </div>
   )
 }
@@ -155,7 +198,6 @@ export default function ExpenseAnalyzer() {
     setError(null)
     setFileName(file.name)
     try {
-      // file -> base64
       const base64: string = await new Promise((resolve, reject) => {
         const r = new FileReader()
         r.onload = () => resolve(String(r.result).split(",")[1])
@@ -210,9 +252,9 @@ export default function ExpenseAnalyzer() {
   // ---------- Upload screen ----------
   if (!analysis) {
     return (
-      <div className="space-y-6">
+      <div className="space-y-5 sm:space-y-6">
         <div
-          className={`rounded-2xl border-2 border-dashed p-8 text-center transition-all ${
+          className={`rounded-2xl border-2 border-dashed p-6 text-center transition-all sm:p-8 ${
             isDragging ? "border-emerald-500 bg-emerald-500/5" : "border-white/15 hover:border-emerald-500/50"
           }`}
           onDragOver={(e) => { e.preventDefault(); setIsDragging(true) }}
@@ -226,9 +268,9 @@ export default function ExpenseAnalyzer() {
             </div>
           ) : (
             <>
-              <h3 className="mb-2 text-xl font-semibold text-white">Upload Bank Statement</h3>
-              <p className="mb-6 text-white/50">Drag & drop your PDF statement here (Axis, Kotak, HDFC, SBI, ICICI, BoB, PNB…)</p>
-              <label className="inline-flex cursor-pointer items-center gap-2 rounded-lg bg-emerald-500 px-5 py-3 font-semibold text-black transition hover:bg-emerald-400">
+              <h3 className="mb-2 text-xl font-semibold tracking-tight text-white">Upload Bank Statement</h3>
+              <p className="mb-6 text-sm text-white/50 sm:text-base">Drag &amp; drop your PDF statement here (Axis, Kotak, HDFC, SBI, ICICI, BoB, PNB…)</p>
+              <label className="inline-flex cursor-pointer items-center gap-2 rounded-xl bg-emerald-500 px-5 py-3 font-semibold text-black transition hover:bg-emerald-400 active:scale-[0.98]">
                 <input type="file" accept=".pdf" className="hidden" onChange={handleFileSelect} />
                 Upload PDF Statement
               </label>
@@ -250,62 +292,71 @@ export default function ExpenseAnalyzer() {
 
   // ---------- Results screen ----------
   return (
-    <div className="space-y-6">
+    <div className="space-y-5 sm:space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2 text-white">
-          <span className="font-medium">{fileName}</span>
-          <span className="text-white/50">({analysis.all_transactions.length} transactions)</span>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex min-w-0 items-center gap-2 text-white">
+          <span className="truncate font-medium">{fileName}</span>
+          <span className="shrink-0 text-sm text-white/50">({analysis.all_transactions.length} txns)</span>
         </div>
-        <button onClick={clearData} className="rounded-lg border border-white/10 px-3 py-1.5 text-sm text-white/70 hover:bg-white/5">
-          Clear & Upload New
+        <button onClick={clearData} className="shrink-0 self-start rounded-lg border border-white/10 px-3 py-1.5 text-sm text-white/70 transition hover:bg-white/5 sm:self-auto">
+          Clear &amp; Upload New
         </button>
       </div>
 
       {/* Summary cards */}
-      <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-        <div className="rounded-xl border border-white/10 bg-white/[0.02] p-4">
-          <p className="text-sm text-white/50">Total Spent</p>
-          <p className="text-2xl font-bold text-rose-400">{inr(s.total_spent)}</p>
-        </div>
-        <div className="rounded-xl border border-white/10 bg-white/[0.02] p-4">
-          <p className="text-sm text-white/50">Total Income</p>
-          <p className="text-2xl font-bold text-emerald-400">{inr(s.total_income)}</p>
-        </div>
-        <div className="rounded-xl border border-white/10 bg-white/[0.02] p-4">
-          <p className="text-sm text-white/50">Savings Rate</p>
-          <p className="text-2xl font-bold text-white">{s.savings_rate}%</p>
-        </div>
-        <div className="rounded-xl border border-white/10 bg-white/[0.02] p-4">
-          <p className="text-sm text-white/50">Risk Score</p>
-          <p className={`text-2xl font-bold ${
-            s.risk_score === "Low" ? "text-emerald-400" : s.risk_score === "High" ? "text-rose-400" : "text-amber-400"
-          }`}>{s.risk_score}</p>
-        </div>
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-4">
+        <StatCard label="Total Spent" value={inr(s.total_spent)} tone="rose" />
+        <StatCard label="Total Income" value={inr(s.total_income)} tone="emerald" />
+        <StatCard label="Savings Rate" value={`${s.savings_rate}%`} tone="blue" />
+        <StatCard
+          label="Risk Score"
+          value={s.risk_score}
+          tone={s.risk_score === "Low" ? "emerald" : s.risk_score === "High" ? "rose" : "amber"}
+        />
       </div>
 
       {/* Charts */}
-      <div className="grid gap-6 md:grid-cols-2">
-        <div className="rounded-xl border border-white/10 bg-white/[0.02] p-4">
-          <h4 className="mb-4 font-semibold text-white">Spending Mix</h4>
-          <ResponsiveContainer width="100%" height={250}>
+      <div className="grid gap-4 sm:gap-6 md:grid-cols-2">
+        <div className="rounded-2xl border border-white/[0.08] bg-gradient-to-b from-white/[0.04] to-white/[0.01] p-4 sm:p-5">
+          <h4 className="mb-4 font-semibold tracking-tight text-white">Spending Mix</h4>
+          <ResponsiveContainer width="100%" height={240}>
             <RechartsPie>
-              <Pie data={chartData} cx="50%" cy="50%" innerRadius={60} outerRadius={100} dataKey="value"
-                label={({ name, percent }) => `${name} ${((percent ?? 0) * 100).toFixed(0)}%`} labelLine={false}>
+              <Pie
+                data={chartData} cx="50%" cy="50%" innerRadius={55} outerRadius={90}
+                dataKey="value" paddingAngle={3} stroke="transparent"
+              >
                 {chartData.map((e, i) => <Cell key={i} fill={e.color} />)}
               </Pie>
-              <Tooltip formatter={(v: number) => inr(v)} />
+              <Tooltip
+                formatter={(v: number) => inr(v)}
+                contentStyle={{ background: "#0a0a0a", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 12, color: "#fff" }}
+              />
             </RechartsPie>
           </ResponsiveContainer>
+          {/* Legend chips — readable on mobile, no overflowing labels */}
+          <div className="mt-3 flex flex-wrap gap-x-4 gap-y-2">
+            {chartData.map((c, i) => (
+              <div key={i} className="flex items-center gap-1.5 text-xs text-white/60">
+                <span className="h-2.5 w-2.5 rounded-full" style={{ background: c.color }} />
+                <span className="truncate">{c.name}</span>
+              </div>
+            ))}
+          </div>
         </div>
-        <div className="rounded-xl border border-white/10 bg-white/[0.02] p-4">
-          <h4 className="mb-4 font-semibold text-white">Top Categories</h4>
-          <ResponsiveContainer width="100%" height={250}>
-            <BarChart data={chartData.slice(0, 5)} layout="vertical">
-              <XAxis type="number" tickFormatter={(v) => `₹${(v / 1000).toFixed(0)}k`} />
-              <YAxis type="category" dataKey="name" width={100} tick={{ fontSize: 12, fill: "#aaa" }} />
-              <Tooltip formatter={(v: number) => inr(v)} />
-              <Bar dataKey="value" radius={[0, 4, 4, 0]}>
+
+        <div className="rounded-2xl border border-white/[0.08] bg-gradient-to-b from-white/[0.04] to-white/[0.01] p-4 sm:p-5">
+          <h4 className="mb-4 font-semibold tracking-tight text-white">Top Categories</h4>
+          <ResponsiveContainer width="100%" height={240}>
+            <BarChart data={chartData.slice(0, 5)} layout="vertical" margin={{ left: 0, right: 8 }}>
+              <XAxis type="number" tickFormatter={(v) => `₹${(v / 1000).toFixed(0)}k`} tick={{ fontSize: 11, fill: "#888" }} axisLine={false} tickLine={false} />
+              <YAxis type="category" dataKey="name" width={88} tick={{ fontSize: 11, fill: "#aaa" }} axisLine={false} tickLine={false} />
+              <Tooltip
+                formatter={(v: number) => inr(v)}
+                cursor={{ fill: "rgba(255,255,255,0.04)" }}
+                contentStyle={{ background: "#0a0a0a", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 12, color: "#fff" }}
+              />
+              <Bar dataKey="value" radius={[0, 6, 6, 0]}>
                 {chartData.slice(0, 5).map((e, i) => <Cell key={i} fill={e.color} />)}
               </Bar>
             </BarChart>
@@ -315,13 +366,15 @@ export default function ExpenseAnalyzer() {
 
       {/* AI insights */}
       {analysis.insights?.length > 0 && (
-        <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/[0.04] p-5">
-          <h4 className="mb-3 font-semibold text-emerald-400">Monexi AI Insights</h4>
-          <div className="space-y-2">
+        <div className="rounded-2xl border border-emerald-500/20 bg-gradient-to-br from-emerald-500/[0.07] to-transparent p-4 sm:p-5">
+          <h4 className="mb-3 flex items-center gap-2 font-semibold tracking-tight text-emerald-400">
+            <span>✨</span> Monexi AI Insights
+          </h4>
+          <div className="space-y-2.5">
             {analysis.insights.map((ins, i) => (
-              <div key={i} className="flex gap-3 rounded-lg bg-black/20 px-4 py-3 text-sm text-white/80">
-                <span className="font-bold text-emerald-400">{i + 1}</span>
-                <span>{ins}</span>
+              <div key={i} className="flex gap-3 rounded-xl border border-emerald-500/10 bg-black/20 px-4 py-3.5">
+                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-emerald-500/20 text-xs font-bold text-emerald-400">{i + 1}</span>
+                <span className="text-[13px] leading-relaxed text-white/80 sm:text-sm">{ins}</span>
               </div>
             ))}
           </div>
@@ -330,7 +383,7 @@ export default function ExpenseAnalyzer() {
 
       {/* Searchable transactions */}
       <div>
-        <h4 className="mb-3 font-semibold text-white">Transactions</h4>
+        <h4 className="mb-3 font-semibold tracking-tight text-white">Transactions</h4>
         <TransactionSearch all={analysis.all_transactions} payees={analysis.payees} />
       </div>
     </div>
