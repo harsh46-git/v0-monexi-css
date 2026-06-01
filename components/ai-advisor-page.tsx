@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Send, Bot, User, Sparkles } from "lucide-react"
+import { Send, Bot, User, Sparkles, Square } from "lucide-react"
 import ReactMarkdown from "react-markdown"
 import remarkGfm from "remark-gfm"
 
@@ -28,14 +28,16 @@ export function AiAdvisorPage() {
   const [input, setInput] = useState("")
   const [isStreaming, setIsStreaming] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const abortRef = useRef<AbortController | null>(null)
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
   }
 
   useEffect(() => {
-    scrollToBottom()
-  }, [messages])
+    // streaming ke time instant scroll, warna smooth
+    messagesEndRef.current?.scrollIntoView({ behavior: isStreaming ? "auto" : "smooth" })
+  }, [messages, isStreaming])
 
   const handleSend = async (text: string = input) => {
     if (!text.trim() || isStreaming) return
@@ -48,11 +50,15 @@ export function AiAdvisorPage() {
     setInput("")
     setIsStreaming(true)
 
+    const controller = new AbortController()
+    abortRef.current = controller
+
     try {
       const response = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ messages: updatedMessages }),
+        signal: controller.signal,
       })
 
       if (!response.ok || !response.body) throw new Error("Stream failed")
@@ -74,17 +80,27 @@ export function AiAdvisorPage() {
           ]
         })
       }
-    } catch (error) {
-      setMessages((prev) => [
-        ...prev.slice(0, -1),
-        {
-          role: "assistant",
-          content: "Sorry, I'm having trouble connecting right now. Please try again.",
-        },
-      ])
+    } catch (error: any) {
+      if (error?.name === "AbortError") {
+        // user ne stop kiya — jo aaya wahi rakho, agar khaali to bubble hatao
+        setMessages((prev) => {
+          const last = prev[prev.length - 1]
+          if (last?.role === "assistant" && last.content === "") return prev.slice(0, -1)
+          return prev
+        })
+      } else {
+        setMessages((prev) => [
+          ...prev.slice(0, -1),
+          { role: "assistant", content: "Sorry, I'm having trouble connecting right now. Please try again." },
+        ])
+      }
     } finally {
       setIsStreaming(false)
+      abortRef.current = null
     }
+  }
+  const stopStreaming = () => {
+    abortRef.current?.abort()
   }
 
   // Last assistant message is still empty = waiting for first token
@@ -204,13 +220,22 @@ export function AiAdvisorPage() {
             className="bg-secondary border-none text-foreground text-base"
             disabled={isStreaming}
           />
-          <Button
-            onClick={() => handleSend()}
-            disabled={!input.trim() || isStreaming}
-            className="gradient-accent text-primary-foreground hover:opacity-90 px-4"
-          >
-            <Send className="h-5 w-5" />
-          </Button>
+          {isStreaming ? (
+            <Button
+              onClick={stopStreaming}
+              className="bg-rose-500/90 text-white hover:bg-rose-500 px-4"
+            >
+              <Square className="h-4 w-4 fill-current" />
+            </Button>
+          ) : (
+            <Button
+              onClick={() => handleSend()}
+              disabled={!input.trim()}
+              className="gradient-accent text-primary-foreground hover:opacity-90 px-4"
+            >
+              <Send className="h-5 w-5" />
+            </Button>
+          )}
         </div>
       </div>
     </div>
