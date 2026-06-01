@@ -138,31 +138,48 @@ function parseStatement(rawText: string): {
 }
 
 async function getInsights(summary: any, topCats: any[], attempt = 0): Promise<string[]> {
-  const prompt = `You are an Indian personal finance advisor. Given this statement summary, write exactly 3 short, sharp, actionable insights (one sentence each, use \u20B9, no preamble). Note: P2A/Transfer amounts are usually money moved between own/family accounts, not real spending.
-Total money out: \u20B9${summary.total_spent}
-Total money in: \u20B9${summary.total_income}
-Savings rate: ${summary.savings_rate}%
-Top spending categories: ${topCats.map((c) => `${c.name} \u20B9${c.amount}`).join(", ")}
-Return ONLY JSON: { "insights": ["...","...","..."] }`;
+  const topCat = topCats[0];
+  const prompt = `You are a sharp Indian personal finance advisor analysing a bank statement.
+
+LANGUAGE: Respond ONLY in clear, professional English. Never use Hindi, Hinglish, or any other language.
+
+DATA:
+- Total money out: ₹${summary.total_spent}
+- Total money in: ₹${summary.total_income}
+- Savings rate: ${summary.savings_rate}%
+- Top spending categories: ${topCats.map((c) => `${c.name} ₹${c.amount}`).join(", ")}
+
+CONTEXT: P2A / Transfer amounts are usually money moved between the user's own or family accounts, so treat them as low-priority for cutting unless they dominate everything else.
+
+TASK: Write exactly 4 insights. Each insight must:
+- Be ONE clear sentence in English.
+- Reference a SPECIFIC number or percentage from the data (e.g. "Your Shopping spend of ₹${topCat?.amount || 0} is X% of total outflow").
+- Give a concrete, realistic action (a rupee target or percentage), not vague advice.
+- Sound like a real advisor, not a robot. No emojis. No preamble.
+
+Cover a mix of: the biggest spending leak, the savings rate, one realistic cut target, and one growth/investment suggestion (SIP, emergency fund, etc.).
+
+Return ONLY JSON: { "insights": ["...", "...", "...", "..."] }`;
   try {
     const res = await groq.chat.completions.create({
       model: "llama-3.3-70b-versatile",
       messages: [{ role: "user", content: prompt }],
-      max_tokens: 400,
+      max_tokens: 500,
       temperature: 0.5,
       response_format: { type: "json_object" },
     });
     const parsed = JSON.parse(res.choices[0].message.content || "{}");
-    return Array.isArray(parsed.insights) ? parsed.insights.slice(0, 3) : [];
+    return Array.isArray(parsed.insights) ? parsed.insights.slice(0, 4) : [];
   } catch (err: any) {
     if (err?.status === 429 && attempt < 1) {
       await sleep(5000);
       return getInsights(summary, topCats, attempt + 1);
     }
     return [
-      "Review your largest spending categories to find quick savings.",
-      "Set a monthly budget per category and track against it.",
-      "Move any surplus into a SIP or emergency fund.",
+      `Your savings rate is ${summary.savings_rate}% — aim for at least 20% by trimming your top category.`,
+      "Set a monthly cap on your largest discretionary category and track it weekly.",
+      "Automate a SIP of ₹2,000–5,000 so savings happen before you spend.",
+      "Build an emergency fund covering 3–6 months of expenses before investing aggressively.",
     ];
   }
 }
