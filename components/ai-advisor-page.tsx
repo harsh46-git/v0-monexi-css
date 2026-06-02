@@ -71,17 +71,24 @@ export function AiAdvisorPage() {
      let rendered = ""
 
      const typeOut = async () => {
-       while (rendered.length < fullText.length) {
-         // 2 chars per tick = smooth but not too slow
-         rendered = fullText.slice(0, rendered.length + 2)
-         setMessages((prev) => {
-           const last = prev[prev.length - 1]
-           return [...prev.slice(0, -1), { role: "assistant", content: rendered }]
-         })
-         await new Promise((r) => setTimeout(r, 12)) // 12ms per tick
-       }
-     }
-
+      while (rendered.length < fullText.length) {
+        // user ne stop dabaya — abort
+        if (controller.signal.aborted) {
+          // jo abhi tak typed hai, wahi rakho
+          setMessages((prev) => {
+            const last = prev[prev.length - 1]
+            return [...prev.slice(0, -1), { role: "assistant", content: rendered }]
+          })
+          return
+        }
+        rendered = fullText.slice(0, rendered.length + 2)
+        setMessages((prev) => {
+          const last = prev[prev.length - 1]
+          return [...prev.slice(0, -1), { role: "assistant", content: rendered }]
+        })
+        await new Promise((r) => setTimeout(r, 12)) // 12ms per tick
+      }
+    }
      while (true) {
        const { done, value } = await reader.read()
        if (done) break
