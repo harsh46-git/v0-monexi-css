@@ -3,7 +3,8 @@
 import { 
   Calendar, Users, MapPin, Plane, ArrowRight, Wallet, Loader2, Search,
   Hotel, Star, Check, Landmark, Rocket, ShieldCheck, BarChart4, 
-  Sparkles, Ticket, Utensils, TrainFront, Globe, Lock // 👈 Yahan 'Lock' add kar diya
+  Sparkles, Ticket, Utensils, TrainFront, Globe, Lock,
+  Download,
 } from "lucide-react"
 
 import { useState, useMemo, useEffect, useCallback, useRef, Suspense } from "react"
@@ -350,6 +351,13 @@ function ToolsContent() {
   const [stockError, setStockError] = useState<string | null>(null)
   const [suggestions, setSuggestions] = useState<any[]>([])
   const [showSug, setShowSug] = useState(false)
+  const [researchSymbol, setResearchSymbol] = useState("")
+  const [researchData, setResearchData] = useState<any>(null)
+  const [researchLoading, setResearchLoading] = useState(false)
+  const [researchError, setResearchError] = useState<string | null>(null)
+  const [researchSug, setResearchSug] = useState<any[]>([])
+  const [showResearchSug, setShowResearchSug] = useState(false)
+
   const [lastUpdated, setLastUpdated] = useState("")
   const [timeFilter, setTimeFilter] = useState("1D");
   const [watchlist, setWatchlist] = useState<any[]>([
@@ -641,18 +649,114 @@ const data = await fetchRealStockPrice(searchSymbol)
   }, [symbol, timeFilter])
 
   // 👇 YAHAN PASTE — Stock search suggestions (Groww-style)
-  useEffect(() => {
-    if (symbol.length < 2 || symbol.includes('.')) { setSuggestions([]); return }
-    const timer = setTimeout(async () => {
-      try {
-        const res = await fetch(`/api/search-stock?q=${encodeURIComponent(symbol)}`)
-        const data = await res.json()
-        setSuggestions(data.results || [])
-      } catch { setSuggestions([]) }
-    }, 300)
-    return () => clearTimeout(timer)
-  }, [symbol])
-  return (
+ // 👇 YAHAN PASTE — Stock search suggestions (Groww-style)
+ useEffect(() => {
+  if (symbol.length < 2 || symbol.includes('.')) { setSuggestions([]); return }
+  const timer = setTimeout(async () => {
+    try {
+      const res = await fetch(`/api/search-stock?q=${encodeURIComponent(symbol)}`)
+      const data = await res.json()
+      setSuggestions(data.results || [])
+    } catch { setSuggestions([]) }
+  }, 300)
+  return () => clearTimeout(timer)
+}, [symbol])
+
+// Research search suggestions
+useEffect(() => {
+  if (researchSymbol.length < 2 || researchSymbol.includes('.')) { setResearchSug([]); return }
+  const timer = setTimeout(async () => {
+    try {
+      const res = await fetch(`/api/search-stock?q=${encodeURIComponent(researchSymbol)}`)
+      const data = await res.json()
+      setResearchSug(data.results || [])
+    } catch { setResearchSug([]) }
+  }, 300)
+  return () => clearTimeout(timer)
+}, [researchSymbol])
+
+const runResearch = async (sym: string) => {
+  if (!sym) return
+  setResearchLoading(true)
+  setResearchError(null)
+  setResearchData(null)
+  setShowResearchSug(false)
+  try {
+    const res = await fetch("/api/stock-research", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ symbol: sym }),
+    })
+    const json = await res.json()
+    if (!res.ok) setResearchError(json.error || "Failed to generate research.")
+    else setResearchData(json)
+  } catch {
+    setResearchError("Something went wrong. Try again.")
+  } finally {
+    setResearchLoading(false)
+  }
+}
+const downloadResearchPDF = async (data: any) => {
+  const { jsPDF } = await import("jspdf")
+  const doc = new jsPDF({ unit: "pt", format: "a4" })
+  const W = doc.internal.pageSize.getWidth()
+  const M = 40
+  let y = 50
+  const line = (txt: string, size = 10, bold = false, color: [number, number, number] = [40, 40, 40]) => {
+    doc.setFont("helvetica", bold ? "bold" : "normal")
+    doc.setFontSize(size)
+    doc.setTextColor(color[0], color[1], color[2])
+    const lines = doc.splitTextToSize(txt, W - M * 2)
+    for (const l of lines) {
+      if (y > 780) { doc.addPage(); y = 50 }
+      doc.text(l, M, y); y += size + 6
+    }
+  }
+  const gap = (h = 10) => { y += h }
+
+  line(data.basics.name, 20, true, [16, 16, 16])
+  line(`${data.basics.symbol} - ${data.basics.exchange}`, 9, false, [120, 120, 120])
+  gap()
+  line(`Price: INR ${data.basics.price}    52W Range: ${data.basics.week52Low} - ${data.basics.week52High}`, 11, true)
+  gap(14)
+
+  line("BUSINESS SUMMARY", 11, true, [16, 185, 129]); gap(2)
+  line(data.ai.businessSummary, 10); gap(12)
+
+  if (data.ai.valuation) {
+    line("VALUATION CHECK", 11, true, [16, 185, 129]); gap(2)
+    line(`Current P/E: ${data.ai.valuation.currentPE}   Industry P/E: ${data.ai.valuation.industryPE}   Status: ${data.ai.valuation.status}`, 10)
+    gap(12)
+  }
+
+  if (data.ai.keyMetrics?.length) {
+    line("KEY METRICS (ESTIMATES)", 11, true, [16, 185, 129]); gap(2)
+    for (const m of data.ai.keyMetrics) line(`${m.label}: ${m.value}`, 10)
+    gap(12)
+  }
+
+  line("KEY POSITIVES", 11, true, [16, 185, 129]); gap(2)
+  for (const p of (data.ai.pros || [])) line(`+ ${p}`, 10)
+  gap(12)
+
+  line("KEY RISKS", 11, true, [220, 38, 38]); gap(2)
+  for (const c of (data.ai.cons || [])) line(`- ${c}`, 10)
+  gap(12)
+
+  if (data.ai.outlook) {
+    line("AI OUTLOOK", 11, true, [16, 185, 129]); gap(2)
+    line(`Outlook: ${data.ai.outlook}   Confidence: ${data.ai.confidence ?? "-"}%   Horizon: ${data.ai.horizon ?? "-"}`, 10)
+    gap(12)
+  }
+
+  line("AI VERDICT", 11, true, [16, 185, 129]); gap(2)
+  line(data.ai.verdict, 10); gap(16)
+
+  line("Generated by Monexi - AI-generated, estimates approximate - Not investment advice", 8, false, [150, 150, 150])
+
+  doc.save(`${data.basics.symbol.replace(".NS", "")}_Monexi_Research.pdf`)
+}
+return (
     <div className="min-h-screen pt-28 pb-20 px-4 bg-background text-white overflow-hidden relative">
       
      {/* --- NAVBAR FIXED --- */}
@@ -685,36 +789,41 @@ const data = await fetchRealStockPrice(searchSymbol)
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-10">
-        <TabsList className="bg-white/5 border border-white/10 p-1 rounded-2xl flex h-auto gap-1 backdrop-blur-3xl shadow-2xl overflow-x-auto whitespace-nowrap scrollbar-hide">
-            <TabsTrigger
+        <TabsList className="bg-white/5 border border-white/10 p-1 rounded-2xl flex h-auto gap-1 backdrop-blur-3xl shadow-2xl overflow-x-auto whitespace-nowrap scrollbar-hide w-full max-w-full justify-start">            <TabsTrigger
               value="market"
-              className="px-3 md:px-8 py-2 md:py-3 rounded-xl font-black text-[10px] md:text-sm uppercase tracking-tighter data-[state=active]:bg-[#10b981] data-[state=active]:text-black transition-all shadow-lg"
+              className="shrink-0 px-3 md:px-8 py-2 md:py-3 rounded-xl font-black text-[10px] md:text-sm uppercase tracking-tighter data-[state=active]:bg-[#10b981] data-[state=active]:text-black transition-all shadow-lg"
             >
               Market
             </TabsTrigger>
             <TabsTrigger
               value="sip"
-              className="px-3 md:px-8 py-2 md:py-3 rounded-xl font-black text-[10px] md:text-sm uppercase tracking-tighter data-[state=active]:bg-[#10b981] data-[state=active]:text-black transition-all shadow-lg"
+              className="shrink-0 px-3 md:px-8 py-2 md:py-3 rounded-xl font-black text-[10px] md:text-sm uppercase tracking-tighter data-[state=active]:bg-[#10b981] data-[state=active]:text-black transition-all shadow-lg"
             >
               SIP Engine
             </TabsTrigger>
             <TabsTrigger
               value="trip"
-              className="px-3 md:px-8 py-2 md:py-3 rounded-xl font-black text-[10px] md:text-sm uppercase tracking-tighter data-[state=active]:bg-[#10b981] data-[state=active]:text-black transition-all shadow-lg"
+              className="shrink-0 px-3 md:px-8 py-2 md:py-3 rounded-xl font-black text-[10px] md:text-sm uppercase tracking-tighter data-[state=active]:bg-[#10b981] data-[state=active]:text-black transition-all shadow-lg"
             >
               Trip Planner
             </TabsTrigger>
             <TabsTrigger
               value="tax"
-              className="px-3 md:px-8 py-2 md:py-3 rounded-xl font-black text-[10px] md:text-sm uppercase tracking-tighter transition-all"
+              className="shrink-0 px-3 md:px-8 py-2 md:py-3 rounded-xl font-black text-[10px] md:text-sm uppercase tracking-tighter transition-all"
             >
               Tax
             </TabsTrigger>
             <TabsTrigger
               value="analysis"
-              className="px-3 md:px-8 py-2 md:py-3 rounded-xl font-black text-[10px] md:text-sm uppercase tracking-tighter transition-all"
+              className="shrink-0 px-3 md:px-8 py-2 md:py-3 rounded-xl font-black text-[10px] md:text-sm uppercase tracking-tighter transition-all"
             >
               Analysis
+            </TabsTrigger>
+            <TabsTrigger
+              value="research"
+              className="shrink-0 px-3 md:px-8 py-2 md:py-3 rounded-xl font-black text-[10px] md:text-sm uppercase tracking-tighter transition-all data-[state=active]:bg-[#10b981] data-[state=active]:text-black"
+            >
+              Research
             </TabsTrigger>
           </TabsList>
 
@@ -1514,12 +1623,203 @@ const data = await fetchRealStockPrice(searchSymbol)
                         <ShieldCheck size={12} /> Secure Transaction
                       </p>
                     </div>
-                  </div>
+                  </div>cdewrq  
 
                 </div>
               </div>
             </div>
           )}
+          <TabsContent value="research" className="animate-in fade-in slide-in-from-bottom-4 duration-700">
+            <div className="max-w-3xl mx-auto space-y-6">
+              <div className="relative">
+                <Input
+                  value={researchSymbol}
+                  onChange={(e) => { setResearchSymbol(e.target.value.toUpperCase()); setShowResearchSug(true); }}
+                  onFocus={() => setShowResearchSug(true)}
+                  onBlur={() => setTimeout(() => setShowResearchSug(false), 200)}
+                  onKeyDown={(e) => {
+                    if (e.key !== "Enter" || !researchSymbol) return
+                    if (researchSug.length > 0 && !researchSymbol.includes(".")) {
+                      const top = researchSug[0]
+                      setResearchSymbol(top.symbol)
+                      runResearch(top.symbol)
+                    } else {
+                      runResearch(researchSymbol)
+                    }
+                  }}                  className="bg-black/50 border-white/10 h-16 rounded-2xl font-black pl-12 text-lg text-white tracking-wider placeholder:text-gray-700"
+                  placeholder="Research any stock… Tata, Infosys, HDFC"
+                />
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-600" size={20} />
+                {showResearchSug && researchSug.length > 0 && (
+                  <div className="absolute z-50 left-0 right-0 mt-2 rounded-xl border border-white/10 bg-[#0a0a0a] shadow-2xl overflow-hidden max-h-64 overflow-y-auto">
+                    {researchSug.map((s: any) => (
+                      <button
+                        key={s.symbol}
+                        onClick={() => { setResearchSymbol(s.symbol); setShowResearchSug(false); setResearchSug([]); runResearch(s.symbol) }}
+                        className="w-full text-left px-4 py-3 hover:bg-[#10b981]/10 transition border-b border-white/5 last:border-0"
+                      >
+                        <p className="font-black text-white text-sm">{s.symbol.replace('.NS','').replace('.BO','')}</p>
+                        <p className="text-[10px] text-gray-500 truncate">{s.name}</p>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {researchLoading && (
+                <div className="flex flex-col items-center justify-center py-20">
+                  <Loader2 className="animate-spin text-[#10b981] mb-4" size={40} />
+                  <p className="text-gray-500 font-bold uppercase tracking-widest text-xs">Researching…</p>
+                </div>
+              )}
+
+              {researchError && (
+                <div className="rounded-2xl border border-rose-500/30 bg-rose-500/10 p-6 text-center text-rose-400 font-bold">
+                  {researchError}
+                </div>
+              )}
+
+{researchData && !researchLoading && (
+                <div id="research-card" className="space-y-5 animate-in fade-in">
+                  <div className="rounded-2xl border border-white/10 bg-gradient-to-b from-white/[0.05] to-transparent p-6">
+                    <div className="flex items-start justify-between gap-4">
+                      <div>
+                        <h2 className="text-2xl font-black text-white tracking-tight">{researchData.basics.name}</h2>
+                        <p className="text-xs text-gray-500 font-bold uppercase tracking-widest mt-1">{researchData.basics.symbol} · {researchData.basics.exchange}</p>
+                      </div>
+                      <button
+                        onClick={() => downloadResearchPDF(researchData)}
+                        className="shrink-0 flex items-center gap-2 rounded-xl border border-[#10b981]/30 bg-[#10b981]/10 px-4 py-2 text-xs font-black uppercase tracking-widest text-[#10b981] hover:bg-[#10b981]/20 transition"
+                      >
+                        <Download size={14} /> PDF
+                      </button>
+                    </div>
+                    <div className="mt-4 flex flex-wrap gap-x-8 gap-y-3">
+                      <div>
+                        <p className="text-[10px] text-gray-500 uppercase tracking-widest">Price</p>
+                        <p className="text-2xl font-black text-white tabular-nums">₹{researchData.basics.price}</p>
+                      </div>
+                      <div>
+                        <p className="text-[10px] text-gray-500 uppercase tracking-widest">52-Week Range</p>
+                        <p className="text-lg font-black text-white/80 tabular-nums">₹{researchData.basics.week52Low} – ₹{researchData.basics.week52High}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-6">
+                    <h3 className="text-[10px] font-black uppercase tracking-widest text-gray-500 mb-3">Business Summary</h3>
+                    <p className="text-sm text-white/80 leading-relaxed">{researchData.ai.businessSummary}</p>
+                  </div>
+
+                  {researchData.ai.keyMetrics?.length > 0 && (
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                      {researchData.ai.keyMetrics.map((m: any, i: number) => (
+                        <div key={i} className="rounded-xl border border-white/10 bg-white/[0.02] p-4">
+                          <div className="flex items-center justify-between mb-1">
+                            <p className="text-[9px] text-gray-500 uppercase tracking-widest">{m.label.replace(/\s*\(approx\)/i, "")}</p>
+                            <span className="text-[8px] text-amber-500/70 font-bold uppercase tracking-wider">⚠ Est</span>
+                          </div>
+                          <p className="text-base font-black text-[#10b981]">{m.value}</p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {researchData.ai.valuation && (
+                    <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-6">
+                      <h3 className="text-[10px] font-black uppercase tracking-widest text-gray-500 mb-4">Valuation Check</h3>
+                      <div className="flex flex-wrap items-end gap-x-10 gap-y-4">
+                        <div>
+                          <p className="text-[10px] text-gray-500 uppercase tracking-widest">Current P/E</p>
+                          <p className="text-2xl font-black text-white tabular-nums">{researchData.ai.valuation.currentPE}</p>
+                        </div>
+                        <div>
+                          <p className="text-[10px] text-gray-500 uppercase tracking-widest">Industry P/E</p>
+                          <p className="text-2xl font-black text-white/70 tabular-nums">{researchData.ai.valuation.industryPE}</p>
+                        </div>
+                        <div>
+                          <p className="text-[10px] text-gray-500 uppercase tracking-widest mb-1">Status</p>
+                          {(() => {
+                            const s = (researchData.ai.valuation.status || "").toLowerCase()
+                            const cheap = s.includes("cheap") || s.includes("under")
+                            const premium = s.includes("premium") || s.includes("expensive") || s.includes("over")
+                            const color = cheap ? "emerald" : premium ? "rose" : "amber"
+                            return (
+                              <span className={`inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-black border-${color}-500/30 bg-${color}-500/10 text-${color}-400`}>
+                                <span className={`h-2 w-2 rounded-full bg-${color}-400`} />
+                                {researchData.ai.valuation.status}
+                              </span>
+                            )
+                          })()}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="grid md:grid-cols-2 gap-4">
+                    <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/[0.04] p-5">
+                      <h3 className="text-sm font-black uppercase tracking-widest text-emerald-400 mb-3">Key Positives</h3>
+                      <ul className="space-y-3">
+                        {researchData.ai.pros?.map((p: string, i: number) => (
+                          <li key={i} className="flex gap-3 text-sm text-white/80"><span className="mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full bg-emerald-400" /><span>{p}</span></li>
+                        ))}
+                      </ul>
+                    </div>
+                    <div className="rounded-2xl border border-rose-500/20 bg-rose-500/[0.04] p-5">
+                      <h3 className="text-sm font-black uppercase tracking-widest text-rose-400 mb-3">Key Risks</h3>
+                      <ul className="space-y-3">
+                        {researchData.ai.cons?.map((c: string, i: number) => (
+                          <li key={i} className="flex gap-3 text-sm text-white/80"><span className="mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full bg-rose-400" /><span>{c}</span></li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
+
+                  {(researchData.ai.outlook || researchData.ai.confidence) && (
+                    <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-6">
+                      <h3 className="text-[10px] font-black uppercase tracking-widest text-gray-500 mb-4">AI Outlook</h3>
+                      <div className="flex flex-wrap items-center gap-x-10 gap-y-4">
+                        <div className="flex items-center gap-2">
+                          {(() => {
+                            const o = (researchData.ai.outlook || "").toLowerCase()
+                            const color = o.includes("posi") ? "emerald" : o.includes("cau") || o.includes("neg") ? "rose" : "amber"
+                            return <><span className={`h-3 w-3 rounded-full bg-${color}-400`} /><span className="text-lg font-black text-white">{researchData.ai.outlook || "Neutral"}</span></>
+                          })()}
+                        </div>
+                        {researchData.ai.horizon && (
+                          <div>
+                            <p className="text-[10px] text-gray-500 uppercase tracking-widest">Horizon</p>
+                            <p className="text-sm font-black text-white/80">{researchData.ai.horizon}</p>
+                          </div>
+                        )}
+                      </div>
+                      {researchData.ai.confidence != null && (
+                        <div className="mt-5">
+                          <div className="flex justify-between text-[10px] text-gray-500 uppercase tracking-widest mb-2">
+                            <span>Confidence</span><span className="text-white font-black">{researchData.ai.confidence}%</span>
+                          </div>
+                          <div className="h-2 w-full rounded-full bg-white/5 overflow-hidden">
+                            <div className="h-full rounded-full bg-[#10b981]" style={{ width: `${researchData.ai.confidence}%` }} />
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  <div className="rounded-2xl border border-white/10 bg-gradient-to-br from-white/[0.06] to-transparent p-6">
+                    <h3 className="flex items-center gap-2 text-sm font-black uppercase tracking-widest text-white mb-3">
+                      <Sparkles size={16} className="text-[#10b981]" /> AI Verdict
+                    </h3>
+                    <p className="text-sm text-white/80 leading-relaxed">{researchData.ai.verdict}</p>
+                  </div>
+
+                  <p className="text-center text-[10px] text-gray-600 uppercase tracking-widest">
+                    AI-generated · estimates are approximate · not investment advice
+                  </p>
+                </div>
+              )}
+            </div>
+          </TabsContent>
           <TabsContent value="tax">
             <TaxPlanner />
           </TabsContent>

@@ -9,7 +9,7 @@ export async function GET(request: Request) {
 
   for (const host of hosts) {
     try {
-      const url = `https://${host}/v8/finance/chart/${symbol}?interval=1d&range=5d`;
+      const url = `https://${host}/v8/finance/chart/${symbol}?interval=1d&range=1d`;
       const response = await fetch(url, {
         headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' },
         next: { revalidate: 60 },
@@ -19,18 +19,11 @@ export async function GET(request: Request) {
       const meta = result?.meta;
       if (meta?.regularMarketPrice == null) continue;
 
-      // previousClose fallback chain
-      let prevClose =
+      const prevClose =
         meta.chartPreviousClose ??
         meta.previousClose ??
-        meta.regularMarketPreviousClose;
-
-      // last resort: second-last close from the candle data
-      if (prevClose == null) {
-        const closes = result?.indicators?.quote?.[0]?.close?.filter((c: number) => c != null);
-        if (closes && closes.length >= 2) prevClose = closes[closes.length - 2];
-        else prevClose = meta.regularMarketPrice; // change = 0, par NaN nahi
-      }
+        meta.regularMarketPreviousClose ??
+        meta.regularMarketPrice;
 
       return NextResponse.json({
         current: meta.regularMarketPrice,
