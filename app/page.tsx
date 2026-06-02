@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase-client" // Ya fir useAuth agar aap 
 import { Navbar } from "@/components/navbar"
 import { HeroSection } from "@/components/hero-section"
 import { FeaturesSection } from "@/components/features-section"
+import { ScreenshotsGallery } from "@/components/screenshots-gallery"
 import { FaqSection } from "@/components/faq-section"
 import { Footer } from "@/components/footer"
 import { DashboardPage } from "@/components/dashboard-page"
@@ -96,6 +97,7 @@ export default function Home() {
         <main>
           <HeroSection onGetStarted={() => setCurrentPage("dashboard")} />
           <FeaturesSection />
+          <ScreenshotsGallery />
           <FaqSection />
           <Footer onNavigate={(page) => setCurrentPage(page as PageType)} />
         </main>
