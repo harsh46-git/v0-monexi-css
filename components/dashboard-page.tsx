@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { createClient } from "@/lib/supabase-client" 
+import jsPDF from "jspdf"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -24,7 +25,8 @@ import {
   ArrowUpRight,
   ArrowDownRight,
   Loader2,
-  Bot             
+  Bot,
+  Download  
 } from "lucide-react";
 import { PieChart, Pie, Cell, ResponsiveContainer, XAxis, YAxis, Tooltip, AreaChart, Area } from "recharts"
 
@@ -162,6 +164,154 @@ export function DashboardPage({ userEmail }: DashboardPageProps) {
 
   const totalExpenses = Object.values(expenses).reduce((a, b) => a + b, 0)
   const savingsRate = income > 0 ? ((income - totalExpenses) / income) * 100 : 0
+  // --- DOWNLOAD FINANCIAL BLUEPRINT PDF ---
+  const downloadBlueprint = () => {
+    if (!plan) return
+    const doc = new jsPDF()
+    const W = doc.internal.pageSize.getWidth()
+    const green: [number, number, number] = [16, 185, 129]
+    const gray: [number, number, number] = [120, 120, 120]
+    const dark: [number, number, number] = [30, 30, 30]
+    const light: [number, number, number] = [225, 225, 225]
+    let y = 0
+
+    const hasExpenses = totalExpenses > 0
+    const fmt = (n: number) => `Rs ${Math.round(n).toLocaleString("en-IN")}`
+    const fmtBig = (n: number) => {
+      if (n >= 10000000) return `Rs ${(n / 10000000).toFixed(2)} Cr`
+      if (n >= 100000) return `Rs ${(n / 100000).toFixed(1)} L`
+      return fmt(n)
+    }
+
+    const healthScore = Math.max(20, Math.min(100, Math.round(40 + savingsRate)))
+    const status = healthScore >= 75 ? "Excellent" : healthScore >= 50 ? "Good" : "Needs Work"
+    const annualSavings = plan.savings * 12
+    const sip = (m: number) => m * (((1 + 0.12 / 12) ** 120 - 1) / (0.12 / 12)) * (1 + 0.12 / 12)
+    const current10Y = sip(plan.savings)
+    const boosted10Y = sip(plan.savings + 2000)
+    const essentialsPct = income > 0 ? ((plan.essentials / income) * 100).toFixed(0) : "0"
+    const lifestylePct = income > 0 ? ((plan.discretionary / income) * 100).toFixed(0) : "0"
+    const savingsPct = savingsRate.toFixed(0)
+    const riskLabel = risk.charAt(0).toUpperCase() + risk.slice(1)
+
+    // ===== HEADER =====
+    doc.setFillColor(...green)
+    doc.rect(0, 0, W, 32, "F")
+    doc.setTextColor(255, 255, 255)
+    doc.setFontSize(18)
+    doc.setFont("helvetica", "bold")
+    doc.text("MONEXI AI FINANCIAL BLUEPRINT", 14, 14)
+    doc.setFontSize(10)
+    doc.setFont("helvetica", "normal")
+    doc.text("Personalized Wealth Report", 14, 22)
+    doc.setFontSize(8)
+    doc.text(
+      "Generated on " + new Date().toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" }),
+      14, 28
+    )
+    y = 46
+
+    const section = (title: string) => {
+      doc.setTextColor(...green)
+      doc.setFontSize(12)
+      doc.setFont("helvetica", "bold")
+      doc.text(title, 14, y)
+      y += 6
+      doc.setDrawColor(...green)
+      doc.line(14, y - 3, W - 14, y - 3)
+      y += 2
+    }
+    const row = (label: string, value: string, bold = false) => {
+      doc.setTextColor(...dark)
+      doc.setFontSize(10)
+      doc.setFont("helvetica", "normal")
+      doc.text(label, 16, y)
+      doc.setTextColor(...(bold ? green : dark))
+      doc.setFont("helvetica", bold ? "bold" : "normal")
+      doc.text(value, W - 16, y, { align: "right" })
+      y += 7
+    }
+
+    // ===== HEALTH METER =====
+    section("Financial Health Score")
+    doc.setTextColor(...dark)
+    doc.setFontSize(24)
+    doc.setFont("helvetica", "bold")
+    doc.text(`${healthScore}`, 16, y + 6)
+    doc.setFontSize(11)
+    doc.text("/ 100", 38, y + 6)
+    doc.setTextColor(...green)
+    doc.setFontSize(11)
+    doc.text(status, 60, y + 6)
+    // bar
+    const barX = 16, barY = y + 11, barW = W - 32, barH = 5
+    doc.setFillColor(...light)
+    doc.roundedRect(barX, barY, barW, barH, 2, 2, "F")
+    doc.setFillColor(...green)
+    doc.roundedRect(barX, barY, (barW * healthScore) / 100, barH, 2, 2, "F")
+    y += 26
+
+    // ===== EXECUTIVE SUMMARY =====
+    section("Executive Summary")
+    row("Monthly Income", fmt(income))
+    row("Monthly Expenses", hasExpenses ? fmt(totalExpenses) : "Not provided")
+    row("Monthly Savings", fmt(plan.savings), true)
+    row("Savings Rate", `${savingsPct}%`, true)
+    row("Annual Savings", fmt(annualSavings))
+    y += 4
+
+    // ===== BUDGET BREAKDOWN =====
+    section("Budget Breakdown")
+    if (hasExpenses) {
+      row("Essentials", `${essentialsPct}%   (${fmt(plan.essentials)})`)
+      row("Lifestyle", `${lifestylePct}%   (${fmt(plan.discretionary)})`)
+      row("Savings", `${savingsPct}%   (${fmt(plan.savings)})`, true)
+    } else {
+      doc.setTextColor(...gray)
+      doc.setFontSize(10)
+      doc.setFont("helvetica", "italic")
+      doc.text("Add your expenses in the dashboard for a detailed breakdown.", 16, y)
+      y += 7
+    }
+    y += 4
+
+    // ===== RISK PROFILE =====
+    section("Risk Profile")
+    row("Investment Style", riskLabel)
+    row("Expected Return", "~12% per year")
+    row("Investment Horizon", "10 Years")
+    y += 4
+
+    // ===== WEALTH PROJECTION =====
+    section("Wealth Projection")
+    row("Current Plan - 10 Years", fmtBig(current10Y), true)
+    row("If you save Rs 2,000 more/mo", fmtBig(boosted10Y), true)
+    row("Extra Wealth Created", `+${fmtBig(boosted10Y - current10Y)}`, true)
+    y += 4
+
+    // ===== NEXT 30 DAYS =====
+    section("Your Next 30 Days")
+    doc.setTextColor(...dark)
+    doc.setFontSize(10)
+    doc.setFont("helvetica", "normal")
+    const actions = [
+      "Build a 6-month emergency fund",
+      `Start a SIP of ${fmt(Math.round(plan.savings * 0.7))}/month`,
+      plan.savings > 0 ? `Work toward ${goalName} (~${Math.ceil(goalPrice / plan.savings)} months)` : `Set a savings target for ${goalName}`,
+      "Maintain a savings rate above 50%",
+    ]
+    actions.forEach((a) => {
+      doc.text(`[ ] ${a}`, 16, y)
+      y += 7
+    })
+
+    // ===== FOOTER =====
+    doc.setFontSize(8)
+    doc.setTextColor(...gray)
+    doc.text("Generated by Monexi - www.monexi.in", W / 2, 288, { align: "center" })
+
+    doc.save("Monexi-Financial-Blueprint.pdf")
+  }
 // --- PHASE 1: REALITY CHECK LOGIC (START) ---
   
   // 1. Calculate the real cashflow
@@ -958,138 +1108,6 @@ const fetchAiAdvice = async () => {
                 </div>
              </div>
           </div>
-
-         {/* ✅ SMART AI GOAL TRACKER (Replace only this Purple Card) */}
-         <div className="glass rounded-2xl p-5 border-2 border-purple-500/20 relative overflow-hidden flex flex-col justify-between shadow-lg hover:shadow-purple-500/10 transition-all group">
-             
-             {/* Header */}
-             <div className="flex justify-between items-start mb-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-purple-500/20 flex items-center justify-center group-hover:scale-110 transition-transform">
-                     {/* Make sure Target is imported */}
-                     <Target className="w-5 h-5 text-purple-500" />
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-foreground">Dream Goal</h3>
-                    <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Smart Planner</p>
-                  </div>
-                </div>
-                {/* Dynamic Status Badge */}
-                <div className={`px-3 py-1 rounded-lg border ${monthsToGoal > 12 ? 'bg-yellow-500/10 border-yellow-500/30 text-yellow-300' : 'bg-purple-500/10 border-purple-500/30 text-purple-300'}`}>
-                   <span className="font-bold text-xs">
-                     {monthsToGoal < 1 ? "Achieved! 🎉" : `${monthsToGoal.toFixed(1)} Months`}
-                   </span>
-                </div>
-             </div>
-
-             {/* Inputs */}
-             <div className="space-y-3 mb-4">
-                <Input
-                  placeholder="e.g. MacBook Air"
-                  value={goalName}
-                  onChange={(e) => setGoalName(e.target.value)}
-                  className="bg-white/5 border-white/10 text-foreground font-semibold focus:border-purple-500 transition-all h-10 text-sm placeholder:text-gray-600"
-                />
-                <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-purple-500 font-bold text-sm">₹</span>
-                  <Input
-                    type="number"
-                    value={goalPrice === 0 ? "" : goalPrice}
-                    onChange={(e) => setGoalPrice(Number(e.target.value))}
-                    placeholder="0"
-                    className="pl-7 bg-white/5 border-white/10 text-foreground font-semibold focus:border-purple-500 transition-all h-10 text-sm [&::-webkit-inner-spin-button]:appearance-none"
-                  />
-                </div>
-             </div>
-
-           {/* 2. ⚡ SMART ADAPTIVE BOOST SUGGESTION (Replace Old Logic with This) */}
-                 {(() => {
-                    // 1. Calculate basic timeline
-                    const monthlySavings = suggestedSIP || 1;
-                    const currentMonths = goalPrice / monthlySavings;
-                    
-                    // 2. Decide "Target Saving" based on how long the goal is
-                    let monthsToSave = 1;
-                    let label = "1 Month";
-
-                    if (currentMonths > 120) { // If > 10 Years
-                        monthsToSave = 60;     // Target: Save 5 Years
-                        label = "5 Years";
-                    } else if (currentMonths > 60) { // If > 5 Years
-                        monthsToSave = 12;     // Target: Save 1 Year
-                        label = "1 Year";
-                    } else if (currentMonths > 24) { // If > 2 Years
-                        monthsToSave = 3;      // Target: Save 3 Months
-                        label = "3 Months";
-                    }
-
-                    // 3. Calculate Extra Money Needed
-                    const targetMonths = currentMonths - monthsToSave;
-                    
-                    if (targetMonths <= 0) return null; // Already achieved
-
-                    const requiredMonthly = goalPrice / targetMonths;
-                    const extraNeeded = Math.ceil((requiredMonthly - monthlySavings) / 100) * 100; // Round to 100
-
-                    // 4. Display Logic
-                    if (currentMonths > 1 && extraNeeded > 0) {
-                      return (
-                         <div className="bg-purple-900/40 p-2 rounded-lg mb-3 border border-purple-500/10 flex items-start gap-2">
-                            <div className="mt-0.5"><Zap className="w-3 h-3 text-yellow-400 fill-yellow-400 animate-pulse" /></div>
-                            <div>
-                              <p className="text-[10px] text-gray-300 leading-tight">
-                                 Add <span className="text-white font-bold">₹{extraNeeded.toLocaleString()}</span> more to buy it <span className="text-green-400 font-bold">{label} Earlier! 🚀</span>
-                              </p>
-                            </div>
-                         </div>
-                      );
-                    } else if (currentMonths <= 1) {
-                       return (
-                         <div className="bg-green-500/10 p-2 rounded-lg mb-3 border border-green-500/20">
-                            <p className="text-[10px] text-green-300 font-bold text-center">
-                               Almost there! You are very close to your goal. 🎉
-                            </p>
-                         </div>
-                       )
-                    }
-                    return null;
-                 })()}
-
-              {/* 🤖 AI ADVISOR BUTTON (Connected to Gemini) */}
-              <button 
-                    onClick={fetchAiAdvice}
-                    disabled={isAiLoading}
-                    className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white text-xs font-bold py-2 rounded-lg transition-all shadow-lg shadow-purple-900/20 cursor-pointer disabled:opacity-70"
-                 >
-                    {isAiLoading ? (
-                        <Loader2 className="w-3 h-3 animate-spin" />
-                    ) : (
-                        <Sparkles className="w-3 h-3" />
-                    )}
-                    {isAiLoading ? "Analyzing..." : (showAiAdvice ? "Hide Advice" : "Ask AI Advisor")}
-                 </button>
-
-                 {/* 4. REAL GEMINI ADVICE RESULT */}
-                 {showAiAdvice && (
-                   <div className="mt-3 pt-3 border-t border-purple-500/20 animate-slide-up">
-                      <div className="flex gap-2">
-                         <div className="w-6 h-6 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shrink-0">
-                            <Bot className="w-3 h-3 text-white" />
-                         </div>
-                         <div>
-                            <p className="text-[11px] text-gray-300 leading-relaxed">
-                               <span className="text-purple-300 font-bold"> Monexi Says:</span> 
-                               {isAiLoading ? (
-                                 <span className="animate-pulse ml-1">Thinking...</span>
-                               ) : (
-                                 <span className="ml-1">{aiAdviceText}</span>
-                               )}
-                            </p>
-                         </div>
-                      </div>
-                   </div>
-                 )}
- </div>
              </div>
          
         {/*  GRID END */}
@@ -1188,7 +1206,23 @@ const fetchAiAdvice = async () => {
                 </div>
 
                 <div className="flex flex-col gap-3 mt-6 border-t border-white/10 pt-6">
-  
+  {/* DOWNLOAD BLUEPRINT */}
+  <Button
+    onClick={downloadBlueprint}
+    className="w-full h-14 text-lg bg-gradient-to-r from-emerald-600 to-emerald-500 text-white font-bold shadow-lg shadow-emerald-900/30 hover:opacity-90 transition-all"
+  >
+    <Download className="w-5 h-5 mr-2" />
+    Download Financial Blueprint
+  </Button>
+
+  {/* 1. EDIT BUTTON:  */}
+  <Button
+    onClick={() => setStep(2)} 
+    className="w-full h-14 text-lg gradient-accent text-background font-semibold shadow-lg hover:shadow-emerald-500/20 transition-all"
+  >
+    <ChevronRight className="w-5 h-5 rotate-180 mr-2" /> {/* Back Arrow Icon */}
+    Edit Income & Expenses
+  </Button>
   {/* 1. EDIT BUTTON:  */}
   <Button
     onClick={() => setStep(2)} 
