@@ -18,13 +18,28 @@ export const metadata: Metadata = {
   },
   
   icons: {
-    icon: '/monexi.png',      
-    shortcut: '/monexi.png',  // Desktop Shortcut 
-    apple: '/monexi.png',     // iPhone Homescreen 
+    icon: '/monexi.png',
+    shortcut: '/monexi.png',
+    apple: '/monexi.png',
+  },
+  metadataBase: new URL("https://www.monexi.in"),
+  openGraph: {
+    title: "Monexi - Next Gen Personal Finance",
+    description: "Finance without the complexity. Smart budgeting, AI-powered advice, and real-time market tracking.",
+    url: "https://www.monexi.in",
+    siteName: "Monexi",
+    images: [{ url: "/monexi.png", width: 512, height: 512, alt: "Monexi - Next Gen Personal Finance" }],
+    locale: "en_IN",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Monexi - Next Gen Personal Finance",
+    description: "Finance without the complexity. AI-powered personal finance.",
+    images: ["/monexi.png"],
   },
   generator: "v0.app",
 };
-
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
