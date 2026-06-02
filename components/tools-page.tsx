@@ -335,11 +335,135 @@ function TxnSearchTable({ txns, payees }: { txns: any[]; payees?: any[] }) {
     </div>
   )
 }
+// EMI Calculator Component
+function EMICalculator() {
+  const [principal, setPrincipal] = useState("")
+  const [rate, setRate] = useState("")
+  const [tenure, setTenure] = useState("")
+  const [emi, setEmi] = useState<number | null>(null)
+  const [totalAmount, setTotalAmount] = useState<number | null>(null)
+  const [totalInterest, setTotalInterest] = useState<number | null>(null)
+
+  const calculate = () => {
+    const p = parseFloat(principal)
+    const r = parseFloat(rate) / 12 / 100
+    const n = parseFloat(tenure) * 12
+    if (!p || !r || !n) return
+    const emiVal = (p * r * Math.pow(1 + r, n)) / (Math.pow(1 + r, n) - 1)
+    setEmi(emiVal)
+    setTotalAmount(emiVal * n)
+    setTotalInterest(emiVal * n - p)
+  }
+
+  const inputClass = "w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-[#10b981]"
+  const labelClass = "block text-sm font-bold text-gray-400 mb-2 uppercase tracking-wider"
+
+  return (
+    <div className="space-y-5">
+      <div>
+        <label className={labelClass}>Loan Amount (₹)</label>
+        <input type="number" placeholder="e.g. 500000" value={principal} onChange={e => setPrincipal(e.target.value)} className={inputClass} />
+      </div>
+      <div>
+        <label className={labelClass}>Annual Interest Rate (%)</label>
+        <input type="number" placeholder="e.g. 8.5" value={rate} onChange={e => setRate(e.target.value)} className={inputClass} />
+      </div>
+      <div>
+        <label className={labelClass}>Tenure (Years)</label>
+        <input type="number" placeholder="e.g. 5" value={tenure} onChange={e => setTenure(e.target.value)} className={inputClass} />
+      </div>
+      <button onClick={calculate} className="w-full py-3 rounded-xl bg-[#10b981] text-black font-black uppercase tracking-wider hover:opacity-90 transition-opacity">
+        Calculate EMI
+      </button>
+      {emi && (
+        <div className="grid grid-cols-3 gap-4 mt-4">
+          <div className="bg-[#10b981]/10 border border-[#10b981]/30 rounded-xl p-4 text-center">
+            <p className="text-xs text-gray-400 uppercase tracking-wider mb-1">Monthly EMI</p>
+            <p className="text-xl font-black text-[#10b981]">₹{emi.toFixed(0)}</p>
+          </div>
+          <div className="bg-white/5 border border-white/10 rounded-xl p-4 text-center">
+            <p className="text-xs text-gray-400 uppercase tracking-wider mb-1">Total Amount</p>
+            <p className="text-xl font-black text-white">₹{totalAmount?.toFixed(0)}</p>
+          </div>
+          <div className="bg-white/5 border border-white/10 rounded-xl p-4 text-center">
+            <p className="text-xs text-gray-400 uppercase tracking-wider mb-1">Total Interest</p>
+            <p className="text-xl font-black text-red-400">₹{totalInterest?.toFixed(0)}</p>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// Goal Planner Component
+function GoalPlanner() {
+  const [goalName, setGoalName] = useState("")
+  const [targetAmount, setTargetAmount] = useState("")
+  const [years, setYears] = useState("")
+  const [returnRate, setReturnRate] = useState("")
+  const [monthlySIP, setMonthlySIP] = useState<number | null>(null)
+  const [lumpsum, setLumpsum] = useState<number | null>(null)
+
+  const calculate = () => {
+    const fv = parseFloat(targetAmount)
+    const n = parseFloat(years) * 12
+    const r = parseFloat(returnRate) / 12 / 100
+    if (!fv || !n || !r) return
+    const sip = (fv * r) / (Math.pow(1 + r, n) - 1)
+    const ls = fv / Math.pow(1 + r, n)
+    setMonthlySIP(sip)
+    setLumpsum(ls)
+  }
+
+  const inputClass = "w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-[#10b981]"
+  const labelClass = "block text-sm font-bold text-gray-400 mb-2 uppercase tracking-wider"
+
+  return (
+    <div className="space-y-5">
+      <div>
+        <label className={labelClass}>Goal Name</label>
+        <input type="text" placeholder="e.g. Buy a Car, Dream Home" value={goalName} onChange={e => setGoalName(e.target.value)} className={inputClass} />
+      </div>
+      <div>
+        <label className={labelClass}>Target Amount (₹)</label>
+        <input type="number" placeholder="e.g. 1000000" value={targetAmount} onChange={e => setTargetAmount(e.target.value)} className={inputClass} />
+      </div>
+      <div>
+        <label className={labelClass}>Time Horizon (Years)</label>
+        <input type="number" placeholder="e.g. 10" value={years} onChange={e => setYears(e.target.value)} className={inputClass} />
+      </div>
+      <div>
+        <label className={labelClass}>Expected Annual Return (%)</label>
+        <input type="number" placeholder="e.g. 12" value={returnRate} onChange={e => setReturnRate(e.target.value)} className={inputClass} />
+      </div>
+      <button onClick={calculate} className="w-full py-3 rounded-xl bg-[#10b981] text-black font-black uppercase tracking-wider hover:opacity-90 transition-opacity">
+        Plan My Goal
+      </button>
+      {monthlySIP && (
+        <div className="space-y-3 mt-4">
+          {goalName && <p className="text-center text-gray-400 font-bold uppercase tracking-wider">To achieve <span className="text-[#10b981]">{goalName}</span></p>}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="bg-[#10b981]/10 border border-[#10b981]/30 rounded-xl p-4 text-center">
+              <p className="text-xs text-gray-400 uppercase tracking-wider mb-1">Monthly SIP</p>
+              <p className="text-xl font-black text-[#10b981]">₹{monthlySIP.toFixed(0)}</p>
+            </div>
+            <div className="bg-white/5 border border-white/10 rounded-xl p-4 text-center">
+              <p className="text-xs text-gray-400 uppercase tracking-wider mb-1">Or Lumpsum Today</p>
+              <p className="text-xl font-black text-white">₹{lumpsum?.toFixed(0)}</p>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
 // FIX: Exported as a NAMED export to match your page.tsx import
-function ToolsContent() {
+function ToolsContent({ section = "tools" }: { section?: "finance" | "tools" }) {
   const searchParams = useSearchParams()
-  const defaultTab = searchParams ? (searchParams.get("tab") === "sip" ? "sip" : "market") : "market"
-  const [transactions, setTransactions] = useState<any[]>([]); // Data store karne ke liye
+  const defaultTab = section === "finance"
+  ? (searchParams?.get("tab") === "sip" ? "sip" : "market")
+  : "tax"
+  const [transactions, setTransactions] = useState<any[]>([]);
   const [analysisResult, setAnalysisResult] = useState("")
   const [isAnalyzing, setIsAnalyzing] = useState(false)
  
@@ -497,7 +621,7 @@ const getAddonsForCity = (city: string) => {
     specific = [
       { id: 'scuba', title: 'Deep Sea Scuba', price: 5500, icon: '🐠', desc: 'Havelock Island Special' },
       { id: 'ferry', title: 'Cruise Ferry', price: 1500, icon: '⛴️', desc: 'Port Blair to Havelock' }
-    ];f
+    ];
   }
 
   // --- INTERNATIONAL ---
@@ -789,43 +913,39 @@ return (
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-10">
-        <TabsList className="bg-white/5 border border-white/10 p-1 rounded-2xl flex h-auto gap-1 backdrop-blur-3xl shadow-2xl overflow-x-auto whitespace-nowrap scrollbar-hide w-full max-w-full justify-start">            <TabsTrigger
-              value="market"
-              className="shrink-0 px-3 md:px-8 py-2 md:py-3 rounded-xl font-black text-[10px] md:text-sm uppercase tracking-tighter data-[state=active]:bg-[#10b981] data-[state=active]:text-black transition-all shadow-lg"
-            >
-              Market
-            </TabsTrigger>
-            <TabsTrigger
-              value="sip"
-              className="shrink-0 px-3 md:px-8 py-2 md:py-3 rounded-xl font-black text-[10px] md:text-sm uppercase tracking-tighter data-[state=active]:bg-[#10b981] data-[state=active]:text-black transition-all shadow-lg"
-            >
-              SIP Engine
-            </TabsTrigger>
-            <TabsTrigger
-              value="trip"
-              className="shrink-0 px-3 md:px-8 py-2 md:py-3 rounded-xl font-black text-[10px] md:text-sm uppercase tracking-tighter data-[state=active]:bg-[#10b981] data-[state=active]:text-black transition-all shadow-lg"
-            >
-              Trip Planner
-            </TabsTrigger>
-            <TabsTrigger
-              value="tax"
-              className="shrink-0 px-3 md:px-8 py-2 md:py-3 rounded-xl font-black text-[10px] md:text-sm uppercase tracking-tighter transition-all"
-            >
-              Tax
-            </TabsTrigger>
-            <TabsTrigger
-              value="analysis"
-              className="shrink-0 px-3 md:px-8 py-2 md:py-3 rounded-xl font-black text-[10px] md:text-sm uppercase tracking-tighter transition-all"
-            >
-              Analysis
-            </TabsTrigger>
-            <TabsTrigger
-              value="research"
-              className="shrink-0 px-3 md:px-8 py-2 md:py-3 rounded-xl font-black text-[10px] md:text-sm uppercase tracking-tighter transition-all data-[state=active]:bg-[#10b981] data-[state=active]:text-black"
-            >
-              Research
-            </TabsTrigger>
-          </TabsList>
+        <TabsList className="bg-white/5 border border-white/10 p-1 rounded-2xl flex h-auto gap-1 backdrop-blur-3xl shadow-2xl overflow-x-auto whitespace-nowrap scrollbar-hide w-full max-w-full justify-start">
+          {section === "finance" ? (
+            <>
+              <TabsTrigger value="market" className="shrink-0 px-3 md:px-8 py-2 md:py-3 rounded-xl font-black text-[10px] md:text-sm uppercase tracking-tighter data-[state=active]:bg-[#10b981] data-[state=active]:text-black transition-all shadow-lg">
+                Market
+              </TabsTrigger>
+              <TabsTrigger value="sip" className="shrink-0 px-3 md:px-8 py-2 md:py-3 rounded-xl font-black text-[10px] md:text-sm uppercase tracking-tighter data-[state=active]:bg-[#10b981] data-[state=active]:text-black transition-all shadow-lg">
+                SIP Engine
+              </TabsTrigger>
+              <TabsTrigger value="analysis" className="shrink-0 px-3 md:px-8 py-2 md:py-3 rounded-xl font-black text-[10px] md:text-sm uppercase tracking-tighter data-[state=active]:bg-[#10b981] data-[state=active]:text-black transition-all shadow-lg">
+                Analysis
+              </TabsTrigger>
+              <TabsTrigger value="research" className="shrink-0 px-3 md:px-8 py-2 md:py-3 rounded-xl font-black text-[10px] md:text-sm uppercase tracking-tighter data-[state=active]:bg-[#10b981] data-[state=active]:text-black transition-all shadow-lg">
+                Research
+              </TabsTrigger>
+            </>
+          ) : (
+            <>
+              <TabsTrigger value="tax" className="shrink-0 px-3 md:px-8 py-2 md:py-3 rounded-xl font-black text-[10px] md:text-sm uppercase tracking-tighter data-[state=active]:bg-[#10b981] data-[state=active]:text-black transition-all shadow-lg">
+                Tax
+              </TabsTrigger>
+              <TabsTrigger value="trip" className="shrink-0 px-3 md:px-8 py-2 md:py-3 rounded-xl font-black text-[10px] md:text-sm uppercase tracking-tighter data-[state=active]:bg-[#10b981] data-[state=active]:text-black transition-all shadow-lg">
+                Trip Planner
+              </TabsTrigger>
+              <TabsTrigger value="emi" className="shrink-0 px-3 md:px-8 py-2 md:py-3 rounded-xl font-black text-[10px] md:text-sm uppercase tracking-tighter data-[state=active]:bg-[#10b981] data-[state=active]:text-black transition-all shadow-lg">
+                EMI Calculator
+              </TabsTrigger>
+              <TabsTrigger value="goal" className="shrink-0 px-3 md:px-8 py-2 md:py-3 rounded-xl font-black text-[10px] md:text-sm uppercase tracking-tighter data-[state=active]:bg-[#10b981] data-[state=active]:text-black transition-all shadow-lg">
+                Goal Planner
+              </TabsTrigger>
+            </>
+          )}
+        </TabsList>
 
           <TabsContent value="market" className="animate-in fade-in slide-in-from-bottom-4 duration-700">
             <div className="grid lg:grid-cols-4 gap-6">
@@ -2043,21 +2163,40 @@ return (
           )}
 
         </div> {/* <-- ADDED: Correctly closing the UPCOMING PAID FEATURE div */}
-
-      </div>
+        </div>
     )}
             </div>
-          </TabsContent>
-        </Tabs>
-      </div>
-    </div>
-  )
-}
+           </TabsContent>
 
-export function ToolsPage() {
+{/* EMI Calculator */}
+<TabsContent value="emi" className="animate-in fade-in slide-in-from-bottom-4 duration-700">
+  <div className="max-w-2xl mx-auto space-y-6">
+    <div className="bg-white/5 border border-white/10 rounded-2xl p-6">
+      <h2 className="text-2xl font-black text-white mb-6 uppercase tracking-tight">EMI Calculator</h2>
+      <EMICalculator />
+    </div>
+  </div>
+</TabsContent>
+
+{/* Goal Planner */}
+<TabsContent value="goal" className="animate-in fade-in slide-in-from-bottom-4 duration-700">
+  <div className="max-w-2xl mx-auto space-y-6">
+    <div className="bg-white/5 border border-white/10 rounded-2xl p-6">
+      <h2 className="text-2xl font-black text-white mb-6 uppercase tracking-tight">Goal Planner</h2>
+      <GoalPlanner />
+    </div>
+  </div>
+</TabsContent>
+
+</Tabs>
+</div>
+</div>
+)
+}
+export function ToolsPage({ section = "tools" }: { section?: "finance" | "tools" }) {
   return (
     <Suspense fallback={<div className="flex h-screen items-center justify-center text-[#10b981]">Loading...</div>}>
-      <ToolsContent />
+      <ToolsContent section={section} />
     </Suspense>
   )
 }

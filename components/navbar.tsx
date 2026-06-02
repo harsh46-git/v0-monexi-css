@@ -55,6 +55,7 @@ export function Navbar({ currentPage, onNavigate }: NavbarProps) {
   const navItems: { label: string; page: PageType }[] = [
     { label: "Home", page: "home" },
     { label: "Dashboard", page: "dashboard" },
+    { label: "Finance Hub", page: "finance-hub" },
     { label: "Tools", page: "tools" },
     { label: "AI Advisor", page: "ai-advisor" },
   ]

@@ -13,7 +13,8 @@ import { AiAdvisorPage } from "@/components/ai-advisor-page"
 import { TermsPage } from "@/components/terms-page"
 import { AuthPage } from "@/components/auth-page"
 
-export type PageType = "home" | "dashboard" | "tools" | "ai-advisor" | "terms"
+type PageType = "home" | "dashboard" | "finance-hub" | "tools" | "ai-advisor" | "terms"
+
 
 export default function Home() {
   const [currentPage, setCurrentPage] = useState<PageType>("home")
@@ -66,7 +67,7 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-background">
-      <Navbar currentPage={currentPage} onNavigate={setCurrentPage} />
+      <Navbar currentPage={currentPage} onNavigate={(page) => setCurrentPage(page)} />
 
       {currentPage === "home" && (
         <main>

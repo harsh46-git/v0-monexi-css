@@ -14,8 +14,7 @@ import { AiAdvisorPage } from "@/components/ai-advisor-page"
 import { TermsPage } from "@/components/terms-page"
 import { AuthPage } from "@/components/auth-page"
 
-export type PageType = "home" | "dashboard" | "tools" | "ai-advisor" | "terms"
-
+export type PageType = "home" | "dashboard" | "finance-hub" | "tools" | "ai-advisor" | "terms"
 export default function Home() {
   const [currentPage, setCurrentPage] = useState<PageType>("home")
   const [session, setSession] = useState<any>(null)
@@ -81,7 +80,7 @@ export default function Home() {
   }
 
   // --- RENDER LOGIC ---
-  const isProtectedPage = ["dashboard", "tools", "ai-advisor"].includes(currentPage)
+  const isProtectedPage = ["dashboard", "finance-hub", "tools", "ai-advisor"].includes(currentPage)
   
   
   //  AuthPage .
@@ -91,8 +90,7 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-black text-white">
-      <Navbar currentPage={currentPage} onNavigate={setCurrentPage} />
-
+<Navbar currentPage={currentPage} onNavigate={(page) => setCurrentPage(page)} />
       {currentPage === "home" && (
         <main>
           <HeroSection onGetStarted={() => setCurrentPage("dashboard")} />
@@ -104,7 +102,8 @@ export default function Home() {
       )}
 
       {currentPage === "dashboard" && session && authFlowCompleted && <DashboardPage userEmail={session.user?.email} />}
-      {currentPage === "tools" && session && authFlowCompleted && <ToolsPage />}
+      {currentPage === "finance-hub" && session && authFlowCompleted && <ToolsPage section="finance" />}
+{currentPage === "tools" && session && authFlowCompleted && <ToolsPage section="tools" />}
       {currentPage === "ai-advisor" && session && authFlowCompleted && <AiAdvisorPage />}
       {currentPage === "terms" && <TermsPage />}
     </div>
