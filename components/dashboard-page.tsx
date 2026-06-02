@@ -121,8 +121,8 @@ export function DashboardPage({ userEmail }: DashboardPageProps) {
           
           if (data.monthly_income > 0) {
             
-             const totalExp = Object.values(data.expenses || {}).reduce((a: any, b: any) => a + Number(b), 0)
-             setPlan({
+            const totalExp: number = Object.values(data.expenses || {}).reduce((a: number, b: any) => a + Number(b), 0)
+            setPlan({
                 essentials: (data.expenses?.rent || 0) + (data.expenses?.utilities || 0),
                 discretionary: (data.expenses?.food || 0) + (data.expenses?.transport || 0) + (data.expenses?.other || 0),
                 savings: Math.max(0, data.monthly_income - totalExp),
@@ -330,20 +330,22 @@ const fetchAiAdvice = async () => {
        
 
         {/* Step Indicator */}
-        <div className="flex items-center justify-center gap-2 mb-8">
-          {[1, 2, 3].map((s) => (
-            <div key={s} className="flex items-center">
-              <div
-                className={`w-10 h-10 rounded-full flex items-center justify-center font-semibold transition-all ${
-                  step >= s ? "bg-accent text-background" : "bg-secondary text-muted-foreground"
-                }`}
-              >
-                {s}
+        {step < 3 && (
+          <div className="flex items-center justify-center gap-2 mb-8">
+            {[1, 2, 3].map((s) => (
+              <div key={s} className="flex items-center">
+                <div
+                  className={`w-10 h-10 rounded-full flex items-center justify-center font-semibold transition-all ${
+                    step >= s ? "bg-accent text-background" : "bg-secondary text-muted-foreground"
+                  }`}
+                >
+                  {s}
+                </div>
+                {s < 3 && <div className={`w-12 h-1 mx-1 rounded ${step > s ? "bg-accent" : "bg-secondary"}`} />}
               </div>
-              {s < 3 && <div className={`w-12 h-1 mx-1 rounded ${step > s ? "bg-accent" : "bg-secondary"}`} />}
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
 
         {/* Step 1: Income */}
         {step === 1 && (
@@ -592,6 +594,67 @@ const fetchAiAdvice = async () => {
                   </div>
                   <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-3">Here's your money breakdown</h1>
                 </div>
+                {/* --- PHASE 2: TOP METRICS STRIP --- */}
+                {(() => {
+                  const annualSavings = plan.savings * 12
+                  const healthScore = Math.max(20, Math.min(100, Math.round(40 + savingsRate)))
+                  const scoreColor = healthScore >= 75 ? "text-emerald-400" : healthScore >= 50 ? "text-yellow-400" : "text-red-400"
+                  const scoreRing = healthScore >= 75 ? "#10b981" : healthScore >= 50 ? "#eab308" : "#ef4444"
+                  const insight =
+                    savingsRate >= 50 ? `You're saving ${savingsRate.toFixed(0)}% — top 5% of savers. Channel it into SIPs for max compounding.`
+                    : savingsRate >= 30 ? `Solid ${savingsRate.toFixed(0)}% savings rate. Bump it by ₹2,000/mo to hit your goal faster.`
+                    : savingsRate >= 15 ? `${savingsRate.toFixed(0)}% saved. Trim one expense category to cross the 30% mark.`
+                    : `Savings rate is low at ${savingsRate.toFixed(0)}%. Review expenses to free up cash.`
+                  return (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+
+                      {/* Health Score */}
+                      <div className="glass rounded-2xl p-6 flex items-center gap-4">
+                        <div className="relative w-16 h-16 flex-shrink-0">
+                          <svg className="w-16 h-16 -rotate-90" viewBox="0 0 36 36">
+                            <circle cx="18" cy="18" r="16" fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="3" />
+                            <circle cx="18" cy="18" r="16" fill="none" stroke={scoreRing} strokeWidth="3" strokeDasharray={`${healthScore} 100`} strokeLinecap="round" />
+                          </svg>
+                          <div className={`absolute inset-0 flex items-center justify-center font-bold text-lg ${scoreColor}`}>
+                            {healthScore}
+                          </div>
+                        </div>
+                        <div>
+                          <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Financial Health</p>
+                          <p className={`font-bold ${scoreColor}`}>
+                            {healthScore >= 75 ? "Excellent" : healthScore >= 50 ? "Good" : "Needs Work"}
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Monthly Savings */}
+                      <div className="glass rounded-2xl p-6">
+                        <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Monthly Savings</p>
+                        <p className="text-2xl font-bold text-emerald-400">₹{plan.savings.toLocaleString("en-IN")}</p>
+                        <p className="text-xs text-muted-foreground mt-1">₹{annualSavings.toLocaleString("en-IN")}/year</p>
+                      </div>
+                    </div>
+                  )
+                })()}
+
+                {/* AI Insight line */}
+                {(() => {
+                  const insight =
+                    savingsRate >= 50 ? `You're saving ${savingsRate.toFixed(0)}% — top tier. Channel it into SIPs for max compounding.`
+                    : savingsRate >= 30 ? `Solid ${savingsRate.toFixed(0)}% savings rate. Bump it by ₹2,000/mo to hit your goal faster.`
+                    : savingsRate >= 15 ? `${savingsRate.toFixed(0)}% saved. Trim one expense category to cross 30%.`
+                    : `Savings rate is low at ${savingsRate.toFixed(0)}%. Review expenses to free up cash.`
+                  return (
+                    <div className="mb-8 p-4 rounded-xl bg-accent/5 border border-accent/20 flex items-start gap-3">
+                      <Sparkles className="w-5 h-5 text-accent flex-shrink-0 mt-0.5" />
+                      <div>
+                        <p className="text-xs text-accent font-bold uppercase tracking-wider mb-1">AI Insight</p>
+                        <p className="text-sm text-foreground/90">{insight}</p>
+                      </div>
+                    </div>
+                  )
+                })()}
+                {/* --- END PHASE 2 --- */}
 {/* --- INSIGHT BANNER START (Paste at Line 461) --- */}
         <div className={`mb-6 p-4 rounded-xl border flex items-start gap-4 ${
           insightStatus === 'danger' ? 'bg-red-900/20 border-red-800' : 
@@ -798,8 +861,54 @@ const fetchAiAdvice = async () => {
                   </p>
                 </div>
 
+                {/* --- WEALTH SCENARIO SIMULATOR --- */}
+                {(() => {
+                  const boost = 2000
+                  const current10Y = calculateSIP(plan.savings, growthRate, 10)
+                  const boosted10Y = calculateSIP(plan.savings + boost, growthRate, 10)
+                  const extra = boosted10Y - current10Y
+                  const fmt = (n: number) => {
+                    if (n >= 10000000) return `₹${(n / 10000000).toFixed(2)}Cr`
+                    if (n >= 100000) return `₹${(n / 100000).toFixed(1)}L`
+                    return `₹${Math.round(n).toLocaleString("en-IN")}`
+                  }
+                  return (
+                    <div className="glass rounded-2xl p-6 mb-6">
+                      <div className="flex items-center gap-2 mb-5">
+                        <Sparkles className="w-5 h-5 text-accent" />
+                        <h3 className="text-lg font-semibold text-foreground">What if you saved more?</h3>
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        {/* Current */}
+                        <div className="rounded-xl p-5 bg-secondary/50 border border-border">
+                          <p className="text-xs text-muted-foreground uppercase tracking-wider mb-2">Current Plan</p>
+                          <p className="text-2xl font-bold text-foreground">{fmt(current10Y)}</p>
+                          <p className="text-xs text-muted-foreground mt-1">in 10 years</p>
+                        </div>
+                        {/* Boosted */}
+                        <div className="rounded-xl p-5 bg-emerald-500/10 border border-emerald-500/30">
+                          <p className="text-xs text-emerald-400 uppercase tracking-wider mb-2">+ ₹{boost.toLocaleString("en-IN")}/mo</p>
+                          <p className="text-2xl font-bold text-emerald-400">{fmt(boosted10Y)}</p>
+                          <p className="text-xs text-muted-foreground mt-1">in 10 years</p>
+                        </div>
+                        {/* Extra */}
+                        <div className="rounded-xl p-5 bg-accent/10 border border-accent/30 flex flex-col justify-center">
+                          <p className="text-xs text-accent uppercase tracking-wider mb-2">Extra Wealth Created</p>
+                          <p className="text-2xl font-bold text-accent">+{fmt(extra)}</p>
+                        </div>
+                      </div>
+                      <p className="text-xs text-muted-foreground text-center mt-4">
+                        Just ₹{boost.toLocaleString("en-IN")} more per month, compounded over 10 years at ~{growthRate}%
+                      </p>
+                    </div>
+                  )
+                })()}
+                {/* --- END SCENARIO --- */}
+
                {/* ✅ GRID START: Emergency Fund & Goal Tracker */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+
+               {/* ✅ GRID START: Emergency Fund & Goal Tracker */}
+               <div className="grid grid-cols-1 gap-4 mb-6">
           
           {/* 1. REALISTIC EMERGENCY FUND CARD */}
           <div className="glass rounded-2xl p-5 border-2 border-blue-500/20 relative overflow-hidden flex flex-col justify-between shadow-lg hover:shadow-blue-500/10 transition-all">
