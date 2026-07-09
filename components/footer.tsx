@@ -99,7 +99,6 @@ export function Footer({ onNavigate }: FooterProps) {
               {[
                 { label: "Terms & Conditions", href: "/terms" },
                 { label: "Privacy Policy", href: "/privacy" },
-                { label: "Cookie Policy", href: "/privacy" },
               ].map(({ label, href }) => (
                 <li key={label}>
                   <a href={href} className="text-sm text-muted-foreground hover:text-foreground transition-colors">
