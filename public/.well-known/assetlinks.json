@@ -4,7 +4,7 @@
     "target": {
       "namespace": "android_app",
       "package_name": "com.monexi.app",
-      "sha256_cert_fingerprints": ["REPLACE_WITH_YOUR_SHA256_FINGERPRINT"]
+      "sha256_cert_fingerprints": ["CE:76:CA:B2:6F:AB:8D:6F:B2:30:E9:2B:F7:84:E4:41:8A:5B:6A:71:AD:4A:FD:D1:76:E5:18:BA:39:19:12:0F"]
     }
   }
 ]
