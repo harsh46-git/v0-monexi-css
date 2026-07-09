@@ -3,6 +3,7 @@ import type { Metadata, Viewport } from "next"
 import { Inter } from "next/font/google"
 import { Analytics } from "@vercel/analytics/next"
 import { AnimatedBackground } from "@/components/animated-background"
+import { SwRegister } from "@/components/sw-register"
 import "./globals.css"
 
 const inter = Inter({
@@ -16,11 +17,16 @@ export const metadata: Metadata = {
   verification: {
     google: 'WVS6iIGzckZZXfDCVwKiELDlegqRuY4NWlhEkfsN5tM',
   },
-  
+  manifest: "/manifest.webmanifest",
   icons: {
     icon: '/monexi.png',
     shortcut: '/monexi.png',
     apple: '/monexi.png',
+  },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "Monexi",
   },
   metadataBase: new URL("https://www.monexi.in"),
   openGraph: {
@@ -57,6 +63,7 @@ export default function RootLayout({
       <body className={`${inter.variable} font-sans antialiased`}>
         <AnimatedBackground />
         <div className="relative z-10">{children}</div>
+        <SwRegister />
         <Analytics />
       </body>
     </html>
