@@ -96,18 +96,20 @@ export function Footer({ onNavigate }: FooterProps) {
               Legal
             </h4>
             <ul className="space-y-3">
-              {["Terms & Conditions", "Privacy Policy", "Cookie Policy"].map(
-                (label) => (
-                  <li key={label}>
-                    <button
-                      onClick={() => handleLinkClick("terms")}
-                      className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-                    >
-                      {label}
-                    </button>
-                  </li>
-                )
-              )}
+              {[
+                { label: "Terms & Conditions", href: "/terms" },
+                { label: "Privacy Policy", href: "/privacy" },
+                { label: "Cookie Policy", href: "/privacy" },
+              ].map(({ label, href }) => (
+                <li key={label}>
+                  
+                    href={href}
+                    className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    {label}
+                  </a>
+                </li>
+              ))}
             </ul>
           </div>
         </div>
