@@ -102,10 +102,7 @@ export function Footer({ onNavigate }: FooterProps) {
                 { label: "Cookie Policy", href: "/privacy" },
               ].map(({ label, href }) => (
                 <li key={label}>
-                  
-                    href={href}
-                    className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-                  >
+                  <a href={href} className="text-sm text-muted-foreground hover:text-foreground transition-colors">
                     {label}
                   </a>
                 </li>
